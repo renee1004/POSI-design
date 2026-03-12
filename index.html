@@ -1098,7 +1098,7 @@
             const colMap = {};
             cells.forEach(el => {
                 const r = el.getBoundingClientRect();
-                const xKey = Math.round(r.left);
+                        const xKey = Math.round(r.left / 3) * 3;
                 if (!colMap[xKey]) colMap[xKey] = [];
                 colMap[xKey].push(r);
             });
