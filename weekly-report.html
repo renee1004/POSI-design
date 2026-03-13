@@ -212,8 +212,8 @@
 
         thead tr.date-row th.col-task {
             background: #1e3a5f;
-            text-align: left;
-            padding-left: 8px;
+            text-align: center;
+            padding-left: 5px;
         }
 
         thead tr.date-row th.col-owner {
@@ -231,7 +231,7 @@
         }
 
         thead tr.date-row th.w2-sep {
-            border-left: 3px solid #1e3a5f;
+            border-left: 1px solid #1e3a5f;
         }
 
         /* 데이터 셀 */
@@ -267,8 +267,8 @@
         }
 
         td.task-cell {
-            text-align: left;
-            padding-left: 8px;
+            text-align: center;
+            padding-left: 5px;
             white-space: nowrap;
             min-width: 80px;
         }
@@ -317,7 +317,7 @@
         }
 
         td.date-cell.w2-sep {
-            border-left: 3px solid #2d5f9e;
+            border-left: 1px solid #2d5f9e;
         }
 
         td.del-cell {
@@ -628,8 +628,16 @@
         }
 
         function updateOwner(gi, ri, val) {
-            groups[gi].rows[ri].owner = val;
+            // 같은 작성자 그룹(병합 블록) 전체 업데이트
+            const rows = groups[gi].rows;
+            // ri 기준으로 연속된 같은 값 블록의 시작 찾기
+            let start = ri;
+            while (start > 0 && (rows[start - 1].owner || "") === (rows[ri].owner || "")) start--;
+            let end = ri;
+            while (end < rows.length - 1 && (rows[end + 1].owner || "") === (rows[ri].owner || "")) end++;
+            for (let k = start; k <= end; k++) rows[k].owner = val;
             saveToStorage();
+            render();
         }
 
         function updateDept(gi, val) {
@@ -719,6 +727,20 @@
                 const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;
                 const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';
 
+                // 작성자 rowspan 계산: 연속된 같은 작성자 그룹화
+                const ownerSpans = [];
+                let ownerIdx = 0;
+                while (ownerIdx < group.rows.length) {
+                    const ownerVal = group.rows[ownerIdx].owner || "";
+                    let span = 1;
+                    while (ownerIdx + span < group.rows.length &&
+                        (group.rows[ownerIdx + span].owner || "") === ownerVal) {
+                        span++;
+                    }
+                    for (let k = 0; k < span; k++) ownerSpans.push(k === 0 ? span : 0);
+                    ownerIdx += span;
+                }
+
                 group.rows.forEach((row, ri) => {
                     h += `<tr class="${rowCls}">`;
 
@@ -733,10 +755,13 @@
           title="클릭하여 부서명 편집">${group.dept}</td>`;
                     }
 
-                    // 작성자
-                    h += `<td class="owner-cell" contenteditable="true"
+                    // 작성자 (연속 같은 값 rowspan 병합)
+                    if (ownerSpans[ri] > 0) {
+                        h += `<td class="owner-cell" rowspan="${ownerSpans[ri]}"
+        contenteditable="true"
         onblur="updateOwner(${gi},${ri},this.textContent.trim())"
         title="클릭하여 작성자 편집">${row.owner || ""}</td>`;
+                    }
 
                     // 구분 (클릭으로 순환)
                     h += `<td id="st_${gi}_${ri}" class="status-cell ${sCls(row.status)}"
@@ -778,6 +803,7 @@
 
             h += `</tbody></table>`;
             document.getElementById('tableWrap').innerHTML = h;
+            setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 20);
         }
 
         // ════════════════════════════════════════════
@@ -959,13 +985,51 @@
             });
         }
 
-        // 스크롤 시 오버레이 위치 재계산
-        document.querySelector('.table-scroll').addEventListener('scroll', drawTodayBox);
-        window.addEventListener('resize', drawTodayBox);
+        // ════════════════════════════════════════════
+        //  1주/2주 경계 세로선 오버레이 (영역 끝까지)
+        // ════════════════════════════════════════════
+        function drawW2SepLine() {
+            document.querySelectorAll('.w2-sep-overlay').forEach(el => el.remove());
+
+            const tableWrap = document.getElementById('tableWrap');
+            const scrollEl = document.querySelector('.table-scroll');
+            if (!tableWrap || !scrollEl) return;
+
+            // w2-sep 클래스 셀 중 첫 번째 데이터 셀 기준으로 x 위치 파악
+            const sepCell = tableWrap.querySelector('td.w2-sep, th.w2-sep');
+            if (!sepCell) return;
+
+            const table = tableWrap.querySelector('table');
+            const wrapRect = tableWrap.getBoundingClientRect();
+            const tableRect = table.getBoundingClientRect();
+            const cellRect = sepCell.getBoundingClientRect();
+
+            const left = cellRect.left - wrapRect.left + scrollEl.scrollLeft - 1;
+            const top = 0;
+            const height = tableRect.bottom - wrapRect.top;
+
+            const line = document.createElement('div');
+            line.className = 'w2-sep-overlay';
+            line.style.cssText = `
+                position: absolute;
+                top: ${top}px;
+                left: ${left}px;
+                width: 1px;
+                height: ${height}px;
+                background: #2d5f9e;
+                pointer-events: none;
+                z-index: 10;
+            `;
+            tableWrap.appendChild(line);
+        }
+
+        // 스크롤·리사이즈 시 재계산
+        document.querySelector('.table-scroll').addEventListener('scroll', () => { drawTodayBox(); drawW2SepLine(); });
+        window.addEventListener('resize', () => { drawTodayBox(); drawW2SepLine(); });
 
         render();
         // 렌더링 후 DOM 반영 대기
-        setTimeout(drawTodayBox, 50);
+        setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 50);
     </script>
 </body>
 
