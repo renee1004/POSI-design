@@ -1,15 +1,7 @@
 [
-  {
-    "dept": "TEST",
-    "cls": "TEST",
-    "rows": [
-      {
-        "status": "완료",
-        "owner": "QA",
-        "task": "워크플로우 자동 생성 테스트",
-        "d1": [0],
-        "d2": []
-      }
-    ]
-  }
+  {"dept":"BAT","cls":"BAT","rows":[{"status":"예정","owner":"테스트","task":"워크플로우 체인 테스트","d1":[0],"d2":[]}]},
+  {"dept":"PMI","cls":"PMI","rows":[]},
+  {"dept":"KT&G글로벌","cls":"KTG","rows":[]},
+  {"dept":"엘리자베스아덴","cls":"ELIZ","rows":[]},
+  {"dept":"U+","cls":"UPLUS","rows":[]}
 ]
