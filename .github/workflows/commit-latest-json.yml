@@ -1,0 +1,107 @@
+name: 📥 Issue JSON → data/latest.json 업데이트 커밋
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  commit-json:
+    runs-on: ubuntu-latest
+    # 이슈 제목이 "POSI WEEKLY JSON - W[주차]" 형식일 때만 실행
+    if: startsWith(github.event.issue.title, 'POSI WEEKLY JSON - W')
+    
+    steps:
+      - name: 📥 저장소 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Issue 본문에서 JSON 추출
+        id: extract_json
+        run: |
+          # Issue 본문에서 ```json ... ``` 블록 추출
+          JSON_CONTENT=$(cat << 'EOF'
+          ${{ github.event.issue.body }}
+          EOF
+          )
+          
+          # ```json으로 시작하는 코드 블록 찾기 (case-insensitive)
+          if echo "$JSON_CONTENT" | grep -iE '```json'; then
+            echo "✅ JSON 코드 블록 발견"
+            
+            # sed로 ```json과 ``` 사이의 내용 추출
+            EXTRACTED=$(echo "$JSON_CONTENT" | sed -n '/```[Jj][Ss][Oo][Nn]/,/```/p' | sed '1d;$d')
+            
+            # 결과를 GitHub Output으로 저장 (multiline)
+            echo "json_data<<EOF" >> $GITHUB_OUTPUT
+            echo "$EXTRACTED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            
+            echo "json_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ JSON 코드 블록을 찾을 수 없습니다"
+            echo "json_found=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: ✅ JSON 유효성 검사
+        if: steps.extract_json.outputs.json_found == 'true'
+        run: |
+          echo '${{ steps.extract_json.outputs.json_data }}' | python3 -m json.tool > /dev/null
+          echo "✅ JSON 형식이 올바릅니다"
+      
+      - name: 💾 data/latest.json 저장
+        if: steps.extract_json.outputs.json_found == 'true'
+        run: |
+          mkdir -p data
+          echo '${{ steps.extract_json.outputs.json_data }}' > data/latest.json
+          echo "✅ data/latest.json 파일 생성 완료"
+          
+      - name: 📂 주차별 백업 파일 저장 (2026-W12.json)
+        if: steps.extract_json.outputs.json_found == 'true'
+        run: |
+          # 이슈 제목에서 주차 추출 (예: "POSI WEEKLY JSON - W12" → "W12")
+          WEEK=$(echo "${{ github.event.issue.title }}" | grep -oE 'W[0-9]+')
+          if [ ! -z "$WEEK" ]; then
+            YEAR=$(date +%Y)
+            FILENAME="data/${YEAR}-${WEEK}.json"
+            cp data/latest.json "$FILENAME"
+            echo "✅ 백업 파일 생성: $FILENAME"
+          fi
+      
+      - name: 🚀 GitHub에 커밋 및 푸시
+        if: steps.extract_json.outputs.json_found == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "POSI 자동보고봇"
+          git add data/*.json
+          
+          if git diff --staged --quiet; then
+            echo "ℹ️ 변경사항 없음"
+          else
+            WEEK=$(echo "${{ github.event.issue.title }}" | grep -oE 'W[0-9]+')
+            git commit -m "📥 주간업무 JSON 업데이트 - ${WEEK} (Issue #${{ github.event.issue.number }})"
+            git push
+            echo "✅ 커밋 완료!"
+          fi
+      
+      - name: 💬 Issue에 성공 코멘트 남기기
+        if: steps.extract_json.outputs.json_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **JSON 데이터가 성공적으로 저장되었습니다!**\n\n- `data/latest.json` 업데이트 완료\n- 주차별 백업 파일 생성 완료\n\n📊 [주간보고서 확인하기](https://renee1004.github.io/POSI-design/)'
+            })
+      
+      - name: ⚠️ Issue에 실패 코멘트 남기기
+        if: steps.extract_json.outputs.json_found == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **JSON 코드 블록을 찾을 수 없습니다**\n\nIssue 본문에 다음 형식으로 JSON을 작성해주세요:\n\n\`\`\`json\n[...JSON 데이터...]\n\`\`\`'
+            })
