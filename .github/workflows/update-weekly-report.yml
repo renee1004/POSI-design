@@ -32,11 +32,16 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: 📥 저장소 체크아웃
+      - name: 📥 저장소 체크아웃 (항상 main 최신)
         uses: actions/checkout@v4
         with:
-          # workflow_run으로 호출되면, 직전 워크플로우가 커밋한 HEAD SHA를 체크아웃
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: main
+          fetch-depth: 0
+
+      - name: 🔄 최신 main 동기화
+        shell: bash
+        run: |
+          git pull --rebase origin main
 
       - name: 🐍 Python 설정
         uses: actions/setup-python@v5
@@ -45,6 +50,7 @@ jobs:
 
       - name: 📂 data/latest.json 읽기
         id: find_json
+        shell: bash
         run: |
           if [ -f "data/latest.json" ]; then
             echo "✅ 파일 발견: data/latest.json"
@@ -58,12 +64,12 @@ jobs:
           fi
 
       - name: 📝 index.html 생성
+        shell: bash
         run: |
           python3 - << 'PYEOF'
           import json, sys, re, os
           from datetime import datetime
 
-          # 1) JSON 데이터 가져오기
           json_data = '''${{ steps.find_json.outputs.json_data }}'''
 
           if not json_data or json_data.strip() == '[]':
@@ -78,7 +84,6 @@ jobs:
                   print("빈 배열로 진행합니다.")
                   groups = []
 
-          # 2) 템플릿 파일 읽기 (weekly-report.html 우선, 없으면 '주간 보고서.html')
           template_path = 'weekly-report.html'
           if not os.path.exists(template_path):
               template_path = '주간 보고서.html'
@@ -89,7 +94,6 @@ jobs:
           with open(template_path, 'r', encoding='utf-8') as f:
               template = f.read()
 
-          # 3) const defaultGroups = [...]; 교체
           new_data = json.dumps(groups, ensure_ascii=False, indent=2)
           pattern = r'(const defaultGroups\s*=\s*)(\[[\s\S]*?\]);'
           replacement = f'\\1{new_data};'
@@ -101,12 +105,10 @@ jobs:
           else:
               print(f"✅ defaultGroups 데이터 교체 완료 ({count}곳)")
 
-          # 4) 생성 시간 메타 주석 추가
           now = datetime.now().strftime('%Y-%m-%d %H:%M')
           meta_comment = f'<!-- 자동 생성: {now} by GitHub Actions -->\n'
           new_html = meta_comment + new_html
 
-          # 5) index.html 저장
           with open('index.html', 'w', encoding='utf-8') as f:
               f.write(new_html)
 
@@ -114,16 +116,23 @@ jobs:
           PYEOF
 
       - name: 🚀 GitHub Pages에 배포 (index.html 커밋/푸시)
+        shell: bash
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "POSI 자동보고봇"
+
           git add index.html
 
           if git diff --staged --quiet; then
             echo "ℹ️ 변경사항 없음 — 커밋 건너뜀"
-          else
-            WEEK=$(date +%Y-W%V)
-            git commit -m "📊 주간업무보고 자동 업데이트 — ${WEEK}"
-            git push
-            echo "✅ GitHub Pages 배포 완료!"
+            exit 0
           fi
+
+          WEEK=$(date +%Y-W%V)
+          git commit -m "📊 주간업무보고 자동 업데이트 — ${WEEK}"
+
+          # push 직전 원격 최신 반영(충돌 최소화)
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          echo "✅ GitHub Pages 배포 완료!"
