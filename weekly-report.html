@@ -493,6 +493,16 @@
             }
         }
     </style>
+    .btn-server {
+  background: #fff3cd;
+  color: #7a5d00;
+  border: 1px solid #c9a227;
+}
+
+.btn-server:hover {
+  background: #ffe8a1;
+}
+
 </head>
 
 <body>
@@ -504,6 +514,7 @@
                 &nbsp;|&nbsp; 🔄 업무내용 저장 시 날짜 자동 채우기</span>
             <button class="btn btn-save" onclick="saveNow()">💾 저장</button>
             <button class="btn btn-auto" onclick="autoFillAllDates()">🔄 날짜 자동 채우기</button>
+            <button class="btn btn-server" onclick="loadServerLatest(this)">⬇️ 서버 최신 불러오기</button>
             <button class="btn btn-reset" onclick="resetData()">↺ 초기화</button>
             <button class="btn btn-print" onclick="window.print()">🖨 인쇄</button>
         </div>
