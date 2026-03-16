@@ -1,6 +1,9 @@
 name: 📊 주간보고 자동 업데이트
 
 on:
+  push:
+    paths:
+      - 'data/*.json'
   repository_dispatch:
     types: [update_weekly_report]
   workflow_dispatch:
