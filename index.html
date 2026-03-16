@@ -1,4 +1,4 @@
-<!-- 자동 생성: 2026-03-12 08:28 by GitHub Actions -->
+<!-- 자동 생성: 2026-03-16 07:31 by GitHub Actions -->
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -213,8 +213,13 @@
 
         thead tr.date-row th.col-task {
             background: #1e3a5f;
-            text-align: left;
-            padding-left: 8px;
+            text-align: center;
+            padding-left: 5px;
+        }
+
+        thead tr.date-row th.col-owner {
+            background: #1e3a5f;
+            min-width: 60px;
         }
 
         thead tr.date-row th.col-del {
@@ -227,7 +232,7 @@
         }
 
         thead tr.date-row th.w2-sep {
-            border-left: 3px solid #1e3a5f;
+            border-left: 1px solid #1e3a5f;
         }
 
         /* 데이터 셀 */
@@ -263,10 +268,16 @@
         }
 
         td.task-cell {
-            text-align: left;
-            padding-left: 8px;
+            text-align: center;
+            padding-left: 5px;
             white-space: nowrap;
             min-width: 80px;
+        }
+
+        td.owner-cell {
+            font-size: 10.5px;
+            white-space: nowrap;
+            min-width: 60px;
         }
 
         td.date-cell {
@@ -307,7 +318,7 @@
         }
 
         td.date-cell.w2-sep {
-            border-left: 3px solid #2d5f9e;
+            border-left: 1px solid #2d5f9e;
         }
 
         td.del-cell {
@@ -516,53 +527,12 @@
     "cls": "BAT",
     "rows": [
       {
-        "status": "완료",
-        "task": "3D POSM(UTC5X1/1C/2C/PCDU) 생산 완료",
-        "d1": [
-          2
-        ],
-        "d2": []
-      },
-      {
-        "status": "완료",
-        "task": "리퍼 회수 3일 완료",
-        "d1": [
-          0,
-          1,
-          2
-        ],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "BWU 분할납품 진행",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "AS 491점 전국 진행 (~3/15)",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": []
-      },
-      {
         "status": "예정",
-        "task": "Perfect Store POSM 납품 (3/25)",
-        "d1": [],
+        "owner": "테스트",
+        "task": "워크플로우 체인 테스트",
+        "d1": [
+          0
+        ],
         "d2": []
       }
     ]
@@ -570,156 +540,22 @@
   {
     "dept": "PMI",
     "cls": "PMI",
-    "rows": [
-      {
-        "status": "완료",
-        "task": "Multi CD 7X 505대 완료",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "Multi CD 재여분 모듈조립 진행",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
-      },
-      {
-        "status": "예정",
-        "task": "Multi CD 출고 (5월 중순)",
-        "d1": [],
-        "d2": []
-      }
-    ]
+    "rows": []
   },
   {
-    "dept": "KT&G글로볼",
+    "dept": "KT&G글로벌",
     "cls": "KTG",
-    "rows": [
-      {
-        "status": "완료",
-        "task": "러시아 12C700/6C600 완료",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "러시아 12C 1200ea 진행중",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
-      },
-      {
-        "status": "예정",
-        "task": "러시아 출장 (3/24~3/27)",
-        "d1": [],
-        "d2": []
-      }
-    ]
+    "rows": []
   },
   {
     "dept": "엘리자베스아덴",
     "cls": "ELIZ",
-    "rows": [
-      {
-        "status": "완료",
-        "task": "현대판교 AS 완료",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "노원 리뉴얼 추가보수 반영",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
-      },
-      {
-        "status": "예정",
-        "task": "분당 집기철수 (3/31)",
-        "d1": [],
-        "d2": []
-      }
-    ]
+    "rows": []
   },
   {
     "dept": "U+",
     "cls": "UPLUS",
-    "rows": [
-      {
-        "status": "완료",
-        "task": "구글 프로모션 설치 완료",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "task": "광고부착물 가이드 작성",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
-      },
-      {
-        "status": "예정",
-        "task": "VIP괿즈 납품 1차 (3/16)",
-        "d1": [],
-        "d2": [
-          0
-        ]
-      }
-    ]
+    "rows": []
   }
 ];
 
@@ -802,13 +638,26 @@
             autoFillRow(gi, ri); // 날짜 자동 파싱 후 적용
         }
 
+        function updateOwner(gi, ri, val) {
+            // 같은 작성자 그룹(병합 블록) 전체 업데이트
+            const rows = groups[gi].rows;
+            // ri 기준으로 연속된 같은 값 블록의 시작 찾기
+            let start = ri;
+            while (start > 0 && (rows[start - 1].owner || "") === (rows[ri].owner || "")) start--;
+            let end = ri;
+            while (end < rows.length - 1 && (rows[end + 1].owner || "") === (rows[ri].owner || "")) end++;
+            for (let k = start; k <= end; k++) rows[k].owner = val;
+            saveToStorage();
+            render();
+        }
+
         function updateDept(gi, val) {
             groups[gi].dept = val;
             saveToStorage();
         }
 
         function addRow(gi) {
-            groups[gi].rows.push({ status: '예정', task: '새 업무 입력', d1: [], d2: [] });
+            groups[gi].rows.push({ status: '예정', owner: '', task: '새 업무 입력', d1: [], d2: [] });
             saveToStorage();
             render();
         }
@@ -863,13 +712,14 @@
             // ── 헤더 ──
             let h = `<table><thead>
     <tr class="week-label">
-      <th class="col-fixed" colspan="4"></th>
+      <th class="col-fixed" colspan="5"></th>
       <th class="week1-lbl" colspan="7">📅 1주차 (${weekRange(baseMonday)})</th>
       <th class="week2-lbl" colspan="7">📅 2주차 (${weekRange(w2Mon)})</th>
     </tr>
     <tr class="date-row">
       <th class="col-del"></th>
       <th class="col-dept">부서</th>
+      <th class="col-owner">작성자</th>
       <th class="col-status">구분</th>
       <th class="col-task">업무내용</th>`;
 
@@ -888,6 +738,20 @@
                 const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;
                 const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';
 
+                // 작성자 rowspan 계산: 연속된 같은 작성자 그룹화
+                const ownerSpans = [];
+                let ownerIdx = 0;
+                while (ownerIdx < group.rows.length) {
+                    const ownerVal = group.rows[ownerIdx].owner || "";
+                    let span = 1;
+                    while (ownerIdx + span < group.rows.length &&
+                        (group.rows[ownerIdx + span].owner || "") === ownerVal) {
+                        span++;
+                    }
+                    for (let k = 0; k < span; k++) ownerSpans.push(k === 0 ? span : 0);
+                    ownerIdx += span;
+                }
+
                 group.rows.forEach((row, ri) => {
                     h += `<tr class="${rowCls}">`;
 
@@ -900,6 +764,14 @@
           contenteditable="true"
           onblur="updateDept(${gi},this.textContent.trim())"
           title="클릭하여 부서명 편집">${group.dept}</td>`;
+                    }
+
+                    // 작성자 (연속 같은 값 rowspan 병합)
+                    if (ownerSpans[ri] > 0) {
+                        h += `<td class="owner-cell" rowspan="${ownerSpans[ri]}"
+        contenteditable="true"
+        onblur="updateOwner(${gi},${ri},this.textContent.trim())"
+        title="클릭하여 작성자 편집">${row.owner || ""}</td>`;
                     }
 
                     // 구분 (클릭으로 순환)
@@ -935,13 +807,14 @@
                 });
 
                 // 행 추가 버튼
-                h += `<tr class="add-row-tr ${rowCls}"><td colspan="18">
+                h += `<tr class="add-row-tr ${rowCls}"><td colspan="19">
       <button class="btn-add-row" onclick="addRow(${gi})">+ ${group.dept} 행 추가</button>
     </td></tr>`;
             });
 
             h += `</tbody></table>`;
             document.getElementById('tableWrap').innerHTML = h;
+            setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 20);
         }
 
         // ════════════════════════════════════════════
@@ -1098,14 +971,18 @@
             const colMap = {};
             cells.forEach(el => {
                 const r = el.getBoundingClientRect();
-                        const xKey = Math.round(r.left / 3) * 3;
+                const xKey = Math.round(r.left);
                 if (!colMap[xKey]) colMap[xKey] = [];
                 colMap[xKey].push(r);
             });
 
             Object.values(colMap).forEach(rects => {
+                const table = tableWrap.querySelector('table');
+                const tableRect = table.getBoundingClientRect();
+
                 const top = Math.min(...rects.map(r => r.top)) - wrapRect.top;
-                const bottom = Math.max(...rects.map(r => r.bottom)) - wrapRect.top;
+                // 테이블의 실제 바닥까지 박스를 확장
+                const bottom = tableRect.bottom - wrapRect.top;
                 const left = Math.min(...rects.map(r => r.left)) - wrapRect.left + scrollLeft;
                 const width = Math.max(...rects.map(r => r.width));
 
@@ -1119,13 +996,51 @@
             });
         }
 
-        // 스크롤 시 오버레이 위치 재계산
-        document.querySelector('.table-scroll').addEventListener('scroll', drawTodayBox);
-        window.addEventListener('resize', drawTodayBox);
+        // ════════════════════════════════════════════
+        //  1주/2주 경계 세로선 오버레이 (영역 끝까지)
+        // ════════════════════════════════════════════
+        function drawW2SepLine() {
+            document.querySelectorAll('.w2-sep-overlay').forEach(el => el.remove());
+
+            const tableWrap = document.getElementById('tableWrap');
+            const scrollEl = document.querySelector('.table-scroll');
+            if (!tableWrap || !scrollEl) return;
+
+            // w2-sep 클래스 셀 중 첫 번째 데이터 셀 기준으로 x 위치 파악
+            const sepCell = tableWrap.querySelector('td.w2-sep, th.w2-sep');
+            if (!sepCell) return;
+
+            const table = tableWrap.querySelector('table');
+            const wrapRect = tableWrap.getBoundingClientRect();
+            const tableRect = table.getBoundingClientRect();
+            const cellRect = sepCell.getBoundingClientRect();
+
+            const left = cellRect.left - wrapRect.left + scrollEl.scrollLeft - 1;
+            const top = 0;
+            const height = tableRect.bottom - wrapRect.top;
+
+            const line = document.createElement('div');
+            line.className = 'w2-sep-overlay';
+            line.style.cssText = `
+                position: absolute;
+                top: ${top}px;
+                left: ${left}px;
+                width: 1px;
+                height: ${height}px;
+                background: #2d5f9e;
+                pointer-events: none;
+                z-index: 10;
+            `;
+            tableWrap.appendChild(line);
+        }
+
+        // 스크롤·리사이즈 시 재계산
+        document.querySelector('.table-scroll').addEventListener('scroll', () => { drawTodayBox(); drawW2SepLine(); });
+        window.addEventListener('resize', () => { drawTodayBox(); drawW2SepLine(); });
 
         render();
         // 렌더링 후 DOM 반영 대기
-        setTimeout(drawTodayBox, 50);
+        setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 50);
     </script>
 </body>
 
