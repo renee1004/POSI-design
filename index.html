@@ -1201,13 +1201,12 @@ function buildReportHTML(newGroups) {
 //  미리보기 & 다운로드
 // ═══════════════════════════════════════
 function openPreview() {
-  if (!updatedReportHTML) {
-    // 미취합 상태면 원본 표시
-    document.getElementById('previewFrame').src = '';
-    document.getElementById('previewFrame').srcdoc = REPORT_TEMPLATE;
-  } else {
-    document.getElementById('previewFrame').srcdoc = updatedReportHTML;
+  const html = updatedReportHTML || REPORT_TEMPLATE;
+  if (!html) {
+    alert('⏳ 보고서 템플릿 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
   }
+  document.getElementById('previewFrame').srcdoc = html;
   document.getElementById('previewModal').classList.add('open');
 }
 
@@ -1304,7 +1303,14 @@ function toast(msg) {
 // ═══════════════════════════════════════
 //  REPORT TEMPLATE (원본 HTML)
 // ═══════════════════════════════════════
-const REPORT_TEMPLATE = `WEEKLY_REPORT_PLACEHOLDER`;
+let REPORT_TEMPLATE = '';
+// weekly-report.html을 같은 저장소에서 fetch
+(async () => {
+  try {
+    const res = await fetch('./weekly-report.html');
+    if (res.ok) REPORT_TEMPLATE = await res.text();
+  } catch(e) { console.warn('weekly-report.html 로드 실패:', e); }
+})();
 
 // ═══════════════════════════════════════
 //  START
