@@ -1,1355 +1,1315 @@
-<!-- 자동 생성: 2026-03-16 08:21 by GitHub Actions -->
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>POSI DESIGN TEAM 주간업무보고</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            height: 100%;
-        }
-
-        body {
-            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-            background: #eef1f6;
-            padding: 12px;
-            font-size: 11.5px;
-            color: #222;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .page-wrapper {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, .10);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        /* ── 툴바 ── */
-        .toolbar {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 9px 14px;
-            background: #fff;
-            border-bottom: 1px solid #dde2ea;
-            flex-shrink: 0;
-            flex-wrap: wrap;
-        }
-
-        .toolbar-title {
-            font-weight: 700;
-            font-size: 13px;
-            color: #1e3a5f;
-            flex: 1;
-            white-space: nowrap;
-        }
-
-        .edit-hint {
-            font-size: 10.5px;
-            color: #888;
-            background: #f5f7fa;
-            border-radius: 10px;
-            padding: 2px 9px;
-            white-space: nowrap;
-        }
-
-        .btn {
-            padding: 5px 13px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            font-family: inherit;
-        }
-
-        .btn-print {
-            background: #1e3a5f;
-            color: #fff;
-        }
-
-        .btn-print:hover {
-            background: #2d5f9e;
-        }
-
-
-        .btn-save {
-            background: #27ae60;
-            color: #fff;
-        }
-
-        .btn-save:hover {
-            background: #1e8449;
-        }
-
-        .btn-reset {
-            background: #fdecea;
-            color: #c0392b;
-            border: 1px solid #e74c3c;
-        }
-
-        .btn-reset:hover {
-            background: #fadbd8;
-        }
-
-        .btn-auto {
-            background: #e8f4fd;
-            color: #1a6bb5;
-            border: 1px solid #1a6bb5;
-        }
-
-        .btn-auto:hover {
-            background: #c8e4f8;
-        }
-
-        /* ── 제목 ── */
-        .report-title {
-            background: #1e3a5f;
-            color: #fff;
-            text-align: center;
-            padding: 9px 14px;
-            font-size: 13px;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .report-title .sub {
-            font-weight: 400;
-            font-size: 11.5px;
-            margin-left: 5px;
-            opacity: .85;
-        }
-
-        .week-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, .18);
-            border-radius: 14px;
-            padding: 2px 11px;
-            font-size: 10.5px;
-            font-weight: 600;
-            margin-left: 9px;
-            vertical-align: middle;
-        }
-
-        /* ── 테이블 스크롤 ── */
-        .table-scroll {
-            overflow-x: auto;
-            flex: 1;
-        }
-
-        /* ── 테이블 ── */
-        table {
-            width: max-content;
-            min-width: 100%;
-            border-collapse: collapse;
-            table-layout: auto;
-        }
-
-        th,
-        td {
-            border: 1px solid #c8cdd6;
-            text-align: center;
-            padding: 3px 5px;
-            vertical-align: middle;
-        }
-
-        /* 헤더 */
-        thead tr.week-label th {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 5px 4px;
-            border-bottom: 2px solid #fff;
-        }
-
-        th.week1-lbl {
-            background: #1e3a5f;
-            color: #fff;
-        }
-
-        th.week2-lbl {
-            background: #3a6faa;
-            color: #fff;
-        }
-
-        th.col-fixed {
-            background: #1e3a5f;
-            color: transparent;
-            border-color: #1e3a5f;
-        }
-
-        thead tr.date-row th {
-            background: #2d5f9e;
-            color: #fff;
-            font-weight: 600;
-            font-size: 10.5px;
-            padding: 5px 3px;
-            white-space: nowrap;
-        }
-
-        thead tr.date-row th.col-dept {
-            background: #1e3a5f;
-        }
-
-        thead tr.date-row th.col-status {
-            background: #1e3a5f;
-        }
-
-        thead tr.date-row th.col-task {
-            background: #1e3a5f;
-            text-align: center;
-            padding-left: 5px;
-        }
-
-        thead tr.date-row th.col-owner {
-            background: #1e3a5f;
-            min-width: 60px;
-        }
-
-        thead tr.date-row th.col-del {
-            background: #1e3a5f;
-            width: 22px;
-        }
-
-        thead tr.date-row th.weekend {
-            background: #3f74b5;
-        }
-
-        thead tr.date-row th.w2-sep {
-            border-left: 1px solid #1e3a5f;
-        }
-
-        /* 데이터 셀 */
-        td.dept-cell {
-            font-weight: 700;
-            font-size: 11px;
-            white-space: nowrap;
-            min-width: 50px;
-        }
-
-        td.status-cell {
-            font-size: 10.5px;
-            font-weight: 600;
-            white-space: nowrap;
-            min-width: 44px;
-            cursor: pointer;
-        }
-
-        td.status-cell:hover {
-            opacity: .75;
-        }
-
-        .status-done {
-            color: #1a6bb5;
-        }
-
-        .status-ing {
-            color: #d45b00;
-        }
-
-        .status-plan {
-            color: #666;
-        }
-
-        td.task-cell {
-            text-align: center;
-            padding-left: 5px;
-            white-space: nowrap;
-            min-width: 80px;
-        }
-
-        td.owner-cell {
-            font-size: 10.5px;
-            white-space: nowrap;
-            min-width: 60px;
-        }
-
-        td.date-cell {
-            width: 32px;
-            min-width: 30px;
-            font-size: 13px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        td.date-cell:hover {
-            filter: brightness(.92);
-        }
-
-        td.date-cell.weekend {
-            background: #f0edff !important;
-        }
-
-        /* 오늘 날짜 셀 - 개별 박스 없애고 미세한 배경만 */
-        td.date-cell.today {
-            background: rgba(255, 107, 53, 0.07) !important;
-        }
-
-        thead th.today-th {
-            background: rgba(255, 107, 53, 0.45) !important;
-            color: #fff;
-        }
-
-        /* 오늘 열 오버레이 */
-        .today-col-overlay {
-            position: absolute;
-            border: 2.5px solid #ff6b35;
-            border-radius: 3px;
-            pointer-events: none;
-            z-index: 20;
-            box-shadow: 0 0 12px rgba(255, 107, 53, 0.22);
-            background: rgba(255, 107, 53, 0.03);
-        }
-
-        td.date-cell.w2-sep {
-            border-left: 1px solid #2d5f9e;
-        }
-
-        td.del-cell {
-            width: 22px;
-            min-width: 22px;
-        }
-
-        .btn-del-row {
-            background: none;
-            border: none;
-            color: #c0392b;
-            cursor: pointer;
-            font-size: 13px;
-            padding: 0 2px;
-            line-height: 1;
-        }
-
-        .btn-del-row:hover {
-            color: #e74c3c;
-        }
-
-        /* 편집 가능 셀 스타일 */
-        [contenteditable] {
-            outline: none;
-        }
-
-        [contenteditable]:hover {
-            background: rgba(45, 95, 158, .07) !important;
-            outline: 1px dashed #4a7fc0;
-            border-radius: 2px;
-            cursor: text;
-        }
-
-        [contenteditable]:focus {
-            background: rgba(45, 95, 158, .12) !important;
-            outline: 2px solid #4a7fc0;
-            border-radius: 2px;
-        }
-
-        /* 부서 배경 */
-        tr.dept-BAT td {
-            background: #e8f0fb;
-        }
-
-        tr.dept-PMI td {
-            background: #fde9e0;
-        }
-
-        tr.dept-KTG td {
-            background: #e5f5e0;
-        }
-
-        tr.dept-ELIZ td {
-            background: #f0e8f7;
-        }
-
-        tr.dept-UPLUS td {
-            background: #fffbe6;
-        }
-
-        tr.dept-BAT td.dept-cell {
-            background: #b8d0f5;
-            color: #1a3f80;
-        }
-
-        tr.dept-PMI td.dept-cell {
-            background: #f9c0a8;
-            color: #8a2a0a;
-        }
-
-        tr.dept-KTG td.dept-cell {
-            background: #a8d8a0;
-            color: #1a5010;
-        }
-
-        tr.dept-ELIZ td.dept-cell {
-            background: #d0b0eb;
-            color: #50168a;
-        }
-
-        tr.dept-UPLUS td.dept-cell {
-            background: #fce090;
-            color: #6a4a00;
-        }
-
-        tr.dept-BAT td.date-cell.weekend {
-            background: #d0e4f8 !important;
-        }
-
-        tr.dept-PMI td.date-cell.weekend {
-            background: #fbcab8 !important;
-        }
-
-        tr.dept-KTG td.date-cell.weekend {
-            background: #c8e8c0 !important;
-        }
-
-        tr.dept-ELIZ td.date-cell.weekend {
-            background: #dcc8f0 !important;
-        }
-
-        tr.dept-UPLUS td.date-cell.weekend {
-            background: #fce898 !important;
-        }
-
-        /* 행 추가 행 */
-        tr.add-row-tr td {
-            background: #f8f9fc !important;
-            padding: 2px;
-            border-top: 2px dashed #c8cdd6 !important;
-        }
-
-        tr.add-row-tr:last-child td {
-            border-bottom: 3px solid #1e3a5f;
-        }
-
-        .btn-add-row {
-            background: none;
-            border: 1px dashed #4a7fc0;
-            color: #4a7fc0;
-            border-radius: 4px;
-            padding: 2px 10px;
-            cursor: pointer;
-            font-size: 10.5px;
-            font-family: inherit;
-            font-weight: 600;
-        }
-
-        .btn-add-row:hover {
-            background: #e8f0fb;
-        }
-
-        /* 저장 알림 */
-        #saveMsg {
-            position: fixed;
-            bottom: 18px;
-            right: 22px;
-            background: #27ae60;
-            color: #fff;
-            padding: 7px 18px;
-            border-radius: 20px;
-            font-size: 11.5px;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity .3s;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        #saveMsg.show {
-            opacity: 1;
-        }
-
-        @media print {
-            body {
-                background: #fff;
-                padding: 4px;
-                font-size: 10px;
-            }
-
-            .toolbar {
-                display: none;
-            }
-
-            .page-wrapper {
-                box-shadow: none;
-                border-radius: 0;
-            }
-
-            .btn-del-row,
-            .btn-add-row {
-                display: none;
-            }
-        }
-    </style>
-    .btn-server {
-  background: #fff3cd;
-  color: #7a5d00;
-  border: 1px solid #c9a227;
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POSI DESIGN — 주간업무 AI 취합 허브</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --navy: #1e3a5f;
+  --blue: #2d5f9e;
+  --blue-lt: #4a7fc0;
+  --accent: #ff6b35;
+  --green: #27ae60;
+  --amber: #d45b00;
+  --bg: #eef1f6;
+  --card: #ffffff;
+  --border: #c8cdd6;
+  --text: #1a1f2e;
+  --muted: #6b7280;
+  --shadow: 0 4px 24px rgba(30,58,95,.12);
 }
 
-.btn-server:hover {
-  background: #ffe8a1;
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
 }
 
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--navy);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.topbar-logo {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.3px;
+}
+.topbar-logo span { color: #ff6b35; }
+.topbar-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.6);
+  border-left: 1px solid rgba(255,255,255,.2);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #27ae60;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(39,174,96,.5); }
+  50% { opacity:.8; box-shadow:0 0 0 6px rgba(39,174,96,0); }
+}
+.status-txt { font-size: 11px; color: rgba(255,255,255,.7); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 0;
+  min-height: calc(100vh - 50px);
+}
+
+/* ── SIDEBAR (팀 방 목록) ── */
+.sidebar {
+  background: #fff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.room-list { overflow-y: auto; flex:1; padding: 8px 0; }
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+}
+.room-item:hover { background: #f5f7fa; }
+.room-item.active {
+  background: #e8f0fb;
+  border-left-color: var(--blue);
+}
+.room-item.active .room-name { color: var(--navy); font-weight: 700; }
+.room-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.room-info { flex:1; min-width:0; }
+.room-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.room-last { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.room-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.room-item.done .room-badge { background: var(--green); }
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 16px;
+}
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .8px;
+  padding: 6px 16px 4px;
+  text-transform: uppercase;
+}
+.collect-room {
+  margin: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--blue);
+  background: #e8f0fb;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.collect-room-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  display: flex; align-items: center; gap: 6px;
+}
+.collect-room-sub { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+
+/* ── MAIN CHAT ── */
+.main-chat {
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fc;
+  overflow: hidden;
+}
+.chat-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.chat-header-avatar {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff;
+}
+.chat-header-info { flex:1; }
+.chat-header-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+.chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.chat-header-actions { display: flex; gap: 8px; }
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all .15s;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { background: #1e8449; }
+.btn-outline { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+.btn-outline:hover { background: #e8f0fb; }
+.btn-amber { background: #fff5e6; color: var(--amber); border: 1px solid #e8a070; }
+.btn-amber:hover { background: #fde9d0; }
+
+/* 메시지 영역 */
+.messages {
+  flex:1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.msg-wrap { display: flex; align-items: flex-start; gap: 10px; }
+.msg-wrap.self { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.msg-content { max-width: 65%; }
+.msg-name { font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+.msg-wrap.self .msg-name { text-align: right; }
+.msg-bubble {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-wrap.self .msg-bubble {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.msg-bubble.report-paste {
+  background: #f0f4fa;
+  border: 1.5px dashed var(--blue-lt);
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.msg-bubble.ai-result {
+  background: linear-gradient(135deg, #e8f4fb 0%, #eef6f0 100%);
+  border: 1.5px solid #a8d4f0;
+}
+.msg-bubble.system {
+  background: #fffbe6;
+  border: 1px dashed #e8c860;
+  font-size: 11.5px;
+  color: #6a4a00;
+}
+.msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.msg-wrap.self .msg-time { text-align: right; }
+
+/* 입력창 */
+.chat-input-wrap {
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 42px;
+  max-height: 120px;
+  transition: border-color .15s;
+}
+.chat-input:focus { border-color: var(--blue); }
+.btn-send {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: var(--navy);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.btn-send:hover { background: var(--blue); }
+.input-hint { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+/* ── RIGHT PANEL (AI 취합 결과 + 미리보기) ── */
+.right-panel {
+  background: #fff;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-title { font-size: 13px; font-weight: 700; color: var(--navy); flex:1; }
+.panel-body { flex:1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* 수신 카드 */
+.report-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.report-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.report-card-body {
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #333;
+  background: #fafbfd;
+  border-top: 1px solid var(--border);
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.report-card .tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-left: auto;
+}
+.tag-done { background: #d4edda; color: #1a5c2a; }
+.tag-wait { background: #fff3cd; color: #856404; }
+.tag-ing { background: #cce5ff; color: #004085; }
+
+/* 진행 상황 */
+.progress-section { }
+.progress-title { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing:.5px; text-transform:uppercase; }
+.team-progress { display: flex; flex-direction: column; gap: 7px; }
+.team-row { display: flex; align-items: center; gap: 8px; }
+.team-row-name { font-size: 11.5px; font-weight: 600; width: 75px; flex-shrink:0; }
+.team-row-bar { flex:1; height: 7px; background: #e8ecf2; border-radius: 4px; overflow:hidden; }
+.team-row-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.team-row-stat {
+  font-size: 10px;
+  font-weight: 700;
+  width: 36px;
+  text-align: right;
+  flex-shrink:0;
+}
+
+.ai-action-box {
+  background: linear-gradient(135deg, #e8f0fb 0%, #eef5ff 100%);
+  border: 1.5px solid var(--blue-lt);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ai-action-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 8px; display:flex; align-items:center; gap:6px; }
+.ai-action-btns { display: flex; flex-direction: column; gap: 6px; }
+
+/* 로딩 */
+.loading-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--blue-lt);
+  margin: 0 2px;
+  animation: bounce 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay:.2s; }
+.loading-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes bounce {
+  0%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+/* 토스트 */
+#toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 999;
+}
+#toast.show { opacity:1; transform: translateY(0); }
+
+/* 모달 */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 640px;
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-header-title { font-size: 15px; font-weight: 700; color: var(--navy); flex:1; }
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+.modal-body { padding: 20px; overflow-y: auto; flex:1; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 11.5px; font-weight: 700; color: var(--navy); margin-bottom: 5px; display:block; }
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--blue); }
+.form-textarea { resize: vertical; min-height: 120px; }
+
+.parsed-preview {
+  background: #f5f7fa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.row-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.row-item {
+  background: #f5f7fa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; align-items:center; gap:10px;
+}
+.row-item-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; flex-shrink:0; }
+.row-item-task { font-size: 12px; flex:1; }
+.row-item-owner { font-size: 11px; color: var(--muted); flex-shrink:0; }
+.row-del-btn { background: none; border:none; color: #c0392b; cursor:pointer; font-size:14px; flex-shrink:0; }
+
+/* API 설정 섹션 */
+.api-section {
+  background: #fffbe6;
+  border: 1px dashed #e8c860;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.api-section-title { font-size: 11.5px; font-weight: 700; color: #6a4a00; margin-bottom: 6px; }
+.api-section-desc { font-size: 11px; color: #856404; line-height: 1.5; }
+
+/* 탭 */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab-btn {
+  flex:1; padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: var(--muted);
+  font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.tab-btn.active { background: var(--navy); color:#fff; border-color: var(--navy); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  .right-panel { display: none; }
+}
+</style>
 </head>
-
 <body>
-    <div class="page-wrapper">
 
-        <div class="toolbar">
-            <div class="toolbar-title">📋 POSI DESIGN TEAM — 디자인 연구소 주간업무보고</div>
-            <span class="edit-hint">✏️ 셀 클릭 → 직접 편집 &nbsp;|&nbsp; 날짜 셀 클릭 → ● 토글 &nbsp;|&nbsp; 구분 클릭 → 상태 변경
-                &nbsp;|&nbsp; 🔄 업무내용 저장 시 날짜 자동 채우기</span>
-            <button class="btn btn-save" onclick="saveNow()">💾 저장</button>
-            <button class="btn btn-auto" onclick="autoFillAllDates()">🔄 날짜 자동 채우기</button>
-            <button class="btn btn-server" onclick="loadServerLatest(this)">⬇️ 서버 최신 불러오기</button>
-            <button class="btn btn-reset" onclick="resetData()">↺ 초기화</button>
-            <button class="btn btn-print" onclick="window.print()">🖨 인쇄</button>
-        </div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">POSI <span>DESIGN</span></div>
+  <div class="topbar-sub">주간업무보고 AI 취합 허브</div>
+  <div class="topbar-right">
+    <div class="status-dot"></div>
+    <div class="status-txt">AI 에이전트 대기중</div>
+    <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);font-size:11px;" onclick="openSettings()">⚙️ 설정</button>
+  </div>
+</div>
 
-        <div class="report-title" id="reportTitle"></div>
-        <div class="table-scroll">
-            <div id="tableWrap"></div>
-        </div>
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">🏠 팀별 에이전트 방</div>
+
+    <div class="sidebar-label">각 팀 보고방</div>
+    <div class="room-list" id="roomList">
+      <!-- JS로 렌더 -->
     </div>
 
-    <div id="saveMsg">✅ 저장되었습니다</div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">취합 에이전트</div>
+    <div class="collect-room" onclick="switchRoom('collect')">
+      <div class="collect-room-title">🤖 AI 취합방</div>
+      <div class="collect-room-sub">전 팀 보고서 자동 취합 · 업데이트</div>
+    </div>
+    <div style="padding:12px;">
+      <button class="btn btn-success" style="width:100%;font-size:12px;" onclick="runCollectAll()">
+        ⚡ 전체 취합 & 보고서 업데이트
+      </button>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:5px;">수신된 보고서를 AI로 취합하여<br>주간업무보고 HTML에 자동 반영</div>
+    </div>
+  </div>
 
-    <script>
-        // ════════════════════════════════════════════
-        //  기본 데이터
-        // ════════════════════════════════════════════
-        const defaultGroups = [
-  {
-    "dept": "BAT",
-    "cls": "BAT",
-    "rows": [
-      {
-        "status": "진행중",
-        "owner": "김상렬",
-        "task": "3D POSM 생산/분할 납품 진행 (BWU 800 포함)",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "예정",
-        "owner": "김지수",
-        "task": "Perfect Store POSM 리뉴얼 납품 (3/25)",
-        "d1": [],
-        "d2": [
-          2
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "김상렬",
-        "task": "리퍼 3월분 점검/세척/수리/재포장 완료 예정 (3/25)",
-        "d1": [],
-        "d2": [
-          2
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "김기범",
-        "task": "저가형 BWU 제안 2차 제출 완료(2/25) → 피드백 대기",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "예정",
-        "owner": "박강남",
-        "task": "BAT Quarterly Innovation 2분기 제출 (4/30)",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "예정",
-        "owner": "한수정",
-        "task": "BAT Quarterly Innovation 2분기 제출 (4/30)",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "owner": "김상렬",
-        "task": "LG 로봇청소기 집기 설치 일정 변경 반영 (4/13)",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "owner": "김상렬",
-        "task": "LG 틔운 무드온 신제품 집기: 3/6 시안제출, 3/9 예가제출",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "완료",
-        "owner": "김상렬",
-        "task": "카길 건강백서 POSM 제작 납품 (3/12)",
-        "d1": [],
-        "d2": []
-      }
-    ]
-  },
-  {
-    "dept": "PMI",
-    "cls": "PMI",
-    "rows": [
-      {
-        "status": "예정",
-        "owner": "최정욱",
-        "task": "Multi CD 잔여분 모듈조립 → 5월 중순 출고 예정",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "완료",
-        "owner": "배근모",
-        "task": "LAMP 컨슈머 인게이지먼트 툴(큐브) 샘플 제작 (3/10)",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "완료",
-        "owner": "배근모",
-        "task": "Multi CD 7X 신규 LCD 샘플 제작 완료 (3/06)",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "owner": "심연섭",
-        "task": "글로리파이어 베이스(VEEV/아이코스) 샘플 제출 → 피드백 대기",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "최정욱",
-        "task": "VEEV SET Sell(CTU) 신규 디자인 시안 제출 (3/06) → 피드백 대응",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "최정욱",
-        "task": "LAMP 디바이스 셀러 유닛(스탠드타입) 피드백 정리 중",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "김승후",
-        "task": "TP 포트녹스 비주얼(8X/7X) 양산 진행 (~3월, 약 1.4만장)",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      }
-    ]
-  },
-  {
-    "dept": "KT&G글로벌",
-    "cls": "KTG",
-    "rows": [
-      {
-        "status": "예정",
-        "owner": "전진혁",
-        "task": "러시아 출장: 프리미엄 POSM 샘플 6ea/프리미엄 진열장 기획안 (3/24~3/27)",
-        "d1": [],
-        "d2": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "완료",
-        "owner": "전진혁",
-        "task": "러시아 2026 상반기용 12C 700ea/6C 600ea 제작 완료",
-        "d1": [],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "owner": "선승화",
-        "task": "우즈벡 모듈형 진열장 1200세트: 2~4월 3차 분할 배송",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "진행중",
-        "owner": "최정우",
-        "task": "몽골 10C 진열장: 300ea 일정 협의(3월) + 1타입 2000~2500ea 제작 예정",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "완료",
-        "owner": "김소희",
-        "task": "인도 2차 POSM 제작 완료 + CDU 샘플 3개 제작/시방서 전달",
-        "d1": [],
-        "d2": []
-      }
-    ]
-  },
-  {
-    "dept": "엘리자베스아덴",
-    "cls": "ELIZ",
-    "rows": [
-      {
-        "status": "진행중",
-        "owner": "엘리자베스아덴팀",
-        "task": "롯데 노원 리뉴얼 오픈: 추가보수 반영 및 제작/기성 결정 진행(3월 중)",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      {
-        "status": "예정",
-        "owner": "엘리자베스아덴팀",
-        "task": "전 매장 메이크업 테스터 신제품 업데이트: 제작물 택배 발송(3월 3주차)",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": []
-      },
-      {
-        "status": "진행중",
-        "owner": "엘리자베스아덴팀",
-        "task": "매장 AS: 비용 이슈 건(부산/대구상인/동래/중동) 커뮤니케이션",
-        "d1": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "d2": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      }
-    ]
-  },
-  {
-    "dept": "U+",
-    "cls": "UPLUS",
-    "rows": []
+  <!-- MAIN CHAT -->
+  <div class="main-chat">
+    <div class="chat-header" id="chatHeader">
+      <div class="chat-header-avatar" id="chatAvatar" style="background:#1e3a5f;">🤖</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name" id="chatName">AI 취합방</div>
+        <div class="chat-header-sub" id="chatSub">전체 취합 & 주간업무보고 자동 업데이트</div>
+      </div>
+      <div class="chat-header-actions">
+        <button class="btn btn-amber" onclick="openSubmitModal()">📤 보고서 제출</button>
+        <button class="btn btn-outline" onclick="openPreview()">👁 미리보기</button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <!-- 메시지 렌더 -->
+    </div>
+
+    <div class="chat-input-wrap">
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="메시지를 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)" rows="1"></textarea>
+        <button class="btn-send" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">📌 보고서 제출은 [보고서 제출] 버튼 사용 | AI 취합은 [전체 취합 & 보고서 업데이트] 클릭</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="panel-header">
+      <div class="panel-title">📊 취합 현황</div>
+      <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;" onclick="refreshStatus()">새로고침</button>
+    </div>
+    <div class="panel-body" id="rightPanel">
+      <!-- JS로 렌더 -->
+    </div>
+  </div>
+
+</div>
+
+<!-- 보고서 제출 모달 -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-title">📤 팀별 주간업무보고서 제출</div>
+      <button class="modal-close" onclick="closeModal('submitModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabText')" id="tabTextBtn">📝 텍스트 입력</button>
+        <button class="tab-btn" onclick="switchTab('tabStructured')" id="tabStructuredBtn">🗂 구조화 입력</button>
+      </div>
+
+      <!-- 텍스트 탭 -->
+      <div id="tabText">
+        <div class="form-group">
+          <label class="form-label">팀 선택</label>
+          <select class="form-select" id="submitTeam">
+            <option value="">팀을 선택하세요</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">팀장 이름</label>
+          <input type="text" class="form-input" id="submitLeader" placeholder="예: 홍길동 팀장">
+        </div>
+        <div class="form-group">
+          <label class="form-label">보고 내용 (자유 형식 — AI가 자동 파싱)</label>
+          <textarea class="form-textarea" id="submitContent" style="min-height:160px;"
+            placeholder="예시:
+[완료] 브랜드 가이드라인 시안 제작 (3/14 완료) - 홍길동
+[진행중] 패키지 디자인 수정 (3/10~3/21) - 이영희
+[예정] 신제품 런칭 포스터 기획 (3월 중) - 박민수
+
+자유 형식으로 작성해도 AI가 알아서 파싱합니다."></textarea>
+        </div>
+        <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="parseTextReport()">🔍 AI 파싱 미리보기</button>
+        <div id="parsedPreview" style="display:none;">
+          <div class="form-label" style="margin-bottom:6px;">📋 파싱 결과 미리보기</div>
+          <div id="parsedContent" class="parsed-preview"></div>
+        </div>
+      </div>
+
+      <!-- 구조화 입력 탭 -->
+      <div id="tabStructured" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">팀 선택</label>
+          <select class="form-select" id="submitTeam2">
+            <option value="">팀을 선택하세요</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">업무 행 목록</label>
+          <div id="rowList" class="row-list"></div>
+          <button class="btn btn-outline" style="width:100%;margin-top:8px;font-size:11.5px;" onclick="addRowItem()">+ 업무 행 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('submitModal')">취소</button>
+      <button class="btn btn-success" onclick="submitReport()">✅ 제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-title">⚙️ AI 에이전트 설정</div>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="api-section">
+        <div class="api-section-title">🔑 Google Gemini API 키 (무료)</div>
+        <div class="api-section-desc">무료 발급: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#856404">aistudio.google.com/apikey</a><br>키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">팀 목록 (쉼표로 구분)</label>
+        <input type="text" class="form-input" id="teamsInput" value="BAT,PMI,KT&G글로벌,엘리자베스아덴,U+">
+      </div>
+      <div class="form-group">
+        <label class="form-label">보고 주차 (자동 계산)</label>
+        <input type="text" class="form-input" id="weekLabel" placeholder="예: 2025년 12주차 (자동)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('settingsModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 미리보기 모달 -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal" style="width:760px;max-width:97vw;">
+    <div class="modal-header">
+      <div class="modal-header-title">👁 주간업무보고 미리보기</div>
+      <button class="modal-close" onclick="closeModal('previewModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <iframe id="previewFrame" style="width:100%;height:500px;border:none;"></iframe>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('previewModal')">닫기</button>
+      <button class="btn btn-success" onclick="downloadReport()">⬇️ HTML 다운로드</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✅ 완료</div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let settings = {
+  apiKey: '',
+  teams: ['BAT','PMI','KT&G글로벌','엘리자베스아덴','U+']
+};
+let currentRoom = 'collect';
+let messages = {}; // roomId → [{role,content,time,name,avatar}]
+let reports = {};  // teamName → {leader, rows: [{status,task,owner,d1,d2}], rawText, time}
+let parsedRows = []; // 구조화 입력용
+
+// 팀 색상 맵
+const TEAM_COLORS = {
+  'BAT': '#1e3a5f',
+  'PMI': '#c0392b',
+  'KT&G글로벌': '#27ae60',
+  '엘리자베스아덴': '#8e44ad',
+  'U+': '#d4a800',
+  'collect': '#2d5f9e'
+};
+const TEAM_ABBR = {
+  'BAT':'BAT','PMI':'PMI','KT&G글로벌':'KTG','엘리자베스아덴':'ELZ','U+':'U+','collect':'🤖'
+};
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+function init() {
+  loadSettings();
+  initRooms();
+  switchRoom('collect');
+  renderRightPanel();
+  addSystemMsg('collect', `👋 안녕하세요! POSI DESIGN 주간업무보고 AI 취합 허브입니다.\n\n📌 사용 방법:\n1. 각 팀장이 팀 방에 접속하여 [보고서 제출] 클릭\n2. 자유 형식으로 보고 내용 입력 (AI가 자동 파싱)\n3. 모든 팀 보고서 수신 후 [전체 취합 & 보고서 업데이트] 클릭\n4. AI가 취합·정리하여 주간업무보고 HTML 자동 업데이트\n\n⚙️ 시작 전 [설정]에서 API 키를 입력해 주세요.`);
+}
+
+function loadSettings() {
+  try {
+    const s = localStorage.getItem('hubSettings');
+    if (s) settings = { ...settings, ...JSON.parse(s) };
+    document.getElementById('apiKeyInput').value = settings.apiKey || '';
+    document.getElementById('teamsInput').value = settings.teams.join(',');
+  } catch(e){}
+}
+
+function saveSettings() {
+  settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  const teamsRaw = document.getElementById('teamsInput').value;
+  settings.teams = teamsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  localStorage.setItem('hubSettings', JSON.stringify(settings));
+  initRooms();
+  closeModal('settingsModal');
+  toast('✅ 설정이 저장되었습니다');
+}
+
+function initRooms() {
+  settings.teams.forEach(t => {
+    if (!messages[t]) messages[t] = [];
+  });
+  if (!messages['collect']) messages['collect'] = [];
+
+  // 팀 셀렉트 채우기
+  ['submitTeam','submitTeam2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<option value="">팀을 선택하세요</option>';
+      settings.teams.forEach(t => {
+        const o = document.createElement('option'); o.value = t; o.textContent = t;
+        el.appendChild(o);
+      });
+    }
+  });
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = settings.teams.map(t => {
+    const rep = reports[t];
+    const hasReport = !!rep;
+    const color = TEAM_COLORS[t] || '#666';
+    const abbr = TEAM_ABBR[t] || t.substring(0,3);
+    const lastMsg = messages[t] && messages[t].length > 0 ? messages[t][messages[t].length-1].content.substring(0,28)+'...' : '보고서 대기중';
+    return `
+      <div class="room-item ${hasReport ? 'done' : ''} ${currentRoom===t ? 'active' : ''}" onclick="switchRoom('${t}')">
+        <div class="room-avatar" style="background:${color}">${abbr}</div>
+        <div class="room-info">
+          <div class="room-name">${t} 팀</div>
+          <div class="room-last">${lastMsg}</div>
+        </div>
+        ${hasReport ? '<span class="room-badge done">✓</span>' : '<span class="room-badge">대기</span>'}
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  ROOM SWITCH
+// ═══════════════════════════════════════
+function switchRoom(roomId) {
+  currentRoom = roomId;
+  const isCollect = roomId === 'collect';
+  const color = TEAM_COLORS[roomId] || '#1e3a5f';
+  const abbr = TEAM_ABBR[roomId] || roomId.substring(0,3);
+
+  document.getElementById('chatAvatar').style.background = color;
+  document.getElementById('chatAvatar').textContent = abbr;
+
+  if (isCollect) {
+    document.getElementById('chatName').textContent = 'AI 취합방';
+    document.getElementById('chatSub').textContent = '전체 취합 & 주간업무보고 자동 업데이트';
+  } else {
+    document.getElementById('chatName').textContent = `${roomId} 팀 보고방`;
+    document.getElementById('chatSub').textContent = `${roomId} 팀장이 주간보고서를 제출하는 방`;
   }
-];
-
-        // 클래스 매핑 (dept 이름이 바뀌어도 색상 유지용)
-        const CLS_LIST = ["BAT", "PMI", "KTG", "ELIZ", "UPLUS"];
-
-        // ════════════════════════════════════════════
-        //  데이터 로드/저장
-        // ════════════════════════════════════════════
-        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
-
-        let groups = (() => {
-            try {
-                const s = localStorage.getItem('weeklyReport');
-                return s ? JSON.parse(s) : deepClone(defaultGroups);
-            } catch (e) { return deepClone(defaultGroups); }
-        })();
-
-        function saveToStorage() {
-            localStorage.setItem('weeklyReport', JSON.stringify(groups));
-        }
-
-        function saveNow() {
-            saveToStorage();
-            const msg = document.getElementById('saveMsg');
-            msg.classList.add('show');
-            setTimeout(() => msg.classList.remove('show'), 1800);
-        }
-
-        function resetData() {
-            if (confirm('모든 내용을 초기 데이터로 되돌리겠습니까?\n(저장된 내용이 삭제됩니다)')) {
-                localStorage.removeItem('weeklyReport');
-                groups = deepClone(defaultGroups);
-                render();
-            }
-        }
-
-        // ════════════════════════════════════════════
-        //  날짜 유틸
-        // ════════════════════════════════════════════
-        const DAY_KO = ["월", "화", "수", "목", "금", "토", "일"];
-        let baseMonday = getMonday(new Date());
-
-        function getMonday(d) {
-            const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;
-            const m = new Date(d); m.setDate(d.getDate() + diff); m.setHours(0, 0, 0, 0); return m;
-        }
-        function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
-        function fmt(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }
-        function weekRange(m) { return `${fmt(m)}(월)~${fmt(addDays(m, 6))}(일)`; }
-
-
-        // ════════════════════════════════════════════
-        //  이벤트 핸들러
-        // ════════════════════════════════════════════
-        function toggleDate(gi, ri, week, day) {
-            const arr = week === 1 ? groups[gi].rows[ri].d1 : groups[gi].rows[ri].d2;
-            const idx = arr.indexOf(day);
-            if (idx >= 0) arr.splice(idx, 1); else arr.push(day);
-            saveToStorage();
-            renderOnly(); // 전체 재렌더 없이 ●만 업데이트
-        }
-
-        function cycleStatus(gi, ri) {
-            const s = ['완료', '진행중', '예정'];
-            const cur = groups[gi].rows[ri].status;
-            groups[gi].rows[ri].status = s[(s.indexOf(cur) + 1) % 3];
-            saveToStorage();
-            // 해당 셀만 업데이트
-            const el = document.getElementById(`st_${gi}_${ri}`);
-            if (el) {
-                const ns = groups[gi].rows[ri].status;
-                el.textContent = ns;
-                el.className = `status-cell ${ns === '완료' ? 'status-done' : ns === '진행중' ? 'status-ing' : 'status-plan'}`;
-            }
-        }
-
-        function updateTask(gi, ri, val) {
-            groups[gi].rows[ri].task = val;
-            autoFillRow(gi, ri); // 날짜 자동 파싱 후 적용
-        }
-
-        function updateOwner(gi, ri, val) {
-            // 같은 작성자 그룹(병합 블록) 전체 업데이트
-            const rows = groups[gi].rows;
-            // ri 기준으로 연속된 같은 값 블록의 시작 찾기
-            let start = ri;
-            while (start > 0 && (rows[start - 1].owner || "") === (rows[ri].owner || "")) start--;
-            let end = ri;
-            while (end < rows.length - 1 && (rows[end + 1].owner || "") === (rows[ri].owner || "")) end++;
-            for (let k = start; k <= end; k++) rows[k].owner = val;
-            saveToStorage();
-            render();
-        }
-
-        function updateDept(gi, val) {
-            groups[gi].dept = val;
-            saveToStorage();
-        }
-
-        function addRow(gi) {
-            groups[gi].rows.push({ status: '예정', owner: '', task: '새 업무 입력', d1: [], d2: [] });
-            saveToStorage();
-            render();
-        }
-
-        function deleteRow(gi, ri) {
-            if (groups[gi].rows.length <= 1) { alert('최소 1개 행은 유지해야 합니다.'); return; }
-            if (confirm(`"${groups[gi].rows[ri].task}" 행을 삭제하시겠습니까?`)) {
-                groups[gi].rows.splice(ri, 1);
-                saveToStorage();
-                render();
-            }
-        }
-
-        // ● 셀만 빠르게 업데이트 (전체 재렌더 없이)
-        function renderOnly() {
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));
-            const w2Mon = addDays(baseMonday, 7);
-            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));
-            groups.forEach((g, gi) => {
-                g.rows.forEach((row, ri) => {
-                    [1, 2].forEach(week => {
-                        const dates = week === 1 ? w1 : w2;
-                        dates.forEach((_, di) => {
-                            const el = document.getElementById(`dc_${gi}_${ri}_${week}_${di}`);
-                            if (el) {
-                                const arr = week === 1 ? row.d1 : row.d2;
-                                el.textContent = arr.includes(di) ? '●' : '';
-                            }
-                        });
-                    });
-                });
-            });
-            // 오늘 박스 재스케줄
-            setTimeout(drawTodayBox, 20);
-        }
-
-        // ════════════════════════════════════════════
-        //  전체 렌더링
-        // ════════════════════════════════════════════
-        function render() {
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));
-            const w2Mon = addDays(baseMonday, 7);
-            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));
-
-            // 제목
-            document.getElementById('reportTitle').innerHTML =
-                `POSI DESIGN TEAM <span class="sub">— 디자인 연구소 주간업무보고</span>` +
-                `<span class="week-badge">1주: ${weekRange(baseMonday)} &nbsp;|&nbsp; 2주: ${weekRange(w2Mon)}</span>`;
-
-            // ── 헤더 ──
-            let h = `<table><thead>
-    <tr class="week-label">
-      <th class="col-fixed" colspan="5"></th>
-      <th class="week1-lbl" colspan="7">📅 1주차 (${weekRange(baseMonday)})</th>
-      <th class="week2-lbl" colspan="7">📅 2주차 (${weekRange(w2Mon)})</th>
-    </tr>
-    <tr class="date-row">
-      <th class="col-del"></th>
-      <th class="col-dept">부서</th>
-      <th class="col-owner">작성자</th>
-      <th class="col-status">구분</th>
-      <th class="col-task">업무내용</th>`;
-
-            w1.forEach((d, i) => {
-                const wk = i >= 5, isTd = d.getTime() === today.getTime();
-                h += `<th class="${wk ? 'weekend' : ''} ${isTd ? 'today-th' : ''}">${fmt(d)}<br>(${DAY_KO[i]})</th>`;
-            });
-            w2.forEach((d, i) => {
-                const wk = i >= 5, isTd = d.getTime() === today.getTime();
-                h += `<th class="${wk ? 'weekend' : ''} ${i === 0 ? 'w2-sep' : ''} ${isTd ? 'today-th' : ''}">${fmt(d)}<br>(${DAY_KO[i]})</th>`;
-            });
-            h += `</tr></thead><tbody>`;
-
-            // ── 데이터 행 ──
-            groups.forEach((group, gi) => {
-                const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;
-                const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';
-
-                // 작성자 rowspan 계산: 연속된 같은 작성자 그룹화
-                const ownerSpans = [];
-                let ownerIdx = 0;
-                while (ownerIdx < group.rows.length) {
-                    const ownerVal = group.rows[ownerIdx].owner || "";
-                    let span = 1;
-                    while (ownerIdx + span < group.rows.length &&
-                        (group.rows[ownerIdx + span].owner || "") === ownerVal) {
-                        span++;
-                    }
-                    for (let k = 0; k < span; k++) ownerSpans.push(k === 0 ? span : 0);
-                    ownerIdx += span;
-                }
-
-                group.rows.forEach((row, ri) => {
-                    h += `<tr class="${rowCls}">`;
-
-                    // 삭제 버튼
-                    h += `<td class="del-cell"><button class="btn-del-row" onclick="deleteRow(${gi},${ri})" title="행 삭제">✕</button></td>`;
-
-                    // 부서 (rowspan + contenteditable)
-                    if (ri === 0) {
-                        h += `<td class="dept-cell" rowspan="${group.rows.length}"
-          contenteditable="true"
-          onblur="updateDept(${gi},this.textContent.trim())"
-          title="클릭하여 부서명 편집">${group.dept}</td>`;
-                    }
-
-                    // 작성자 (연속 같은 값 rowspan 병합)
-                    if (ownerSpans[ri] > 0) {
-                        h += `<td class="owner-cell" rowspan="${ownerSpans[ri]}"
-        contenteditable="true"
-        onblur="updateOwner(${gi},${ri},this.textContent.trim())"
-        title="클릭하여 작성자 편집">${row.owner || ""}</td>`;
-                    }
-
-                    // 구분 (클릭으로 순환)
-                    h += `<td id="st_${gi}_${ri}" class="status-cell ${sCls(row.status)}"
-        onclick="cycleStatus(${gi},${ri})" title="클릭하여 상태 변경">${row.status}</td>`;
-
-                    // 업무내용 (contenteditable)
-                    h += `<td class="task-cell" contenteditable="true"
-        onblur="updateTask(${gi},${ri},this.textContent.trim())"
-        title="클릭하여 업무내용 편집">${row.task}</td>`;
-
-                    // 1주차 날짜
-                    w1.forEach((d, di) => {
-                        const wk = di >= 5, td = d.getTime() === today.getTime();
-                        const on = row.d1.includes(di);
-                        h += `<td id="dc_${gi}_${ri}_1_${di}"
-          class="date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}"
-          onclick="toggleDate(${gi},${ri},1,${di})"
-          title="${fmt(d)} 클릭하여 토글">${on ? '●' : ''}</td>`;
-                    });
-
-                    // 2주차 날짜
-                    w2.forEach((d, di) => {
-                        const wk = di >= 5, td = d.getTime() === today.getTime();
-                        const on = row.d2.includes(di);
-                        h += `<td id="dc_${gi}_${ri}_2_${di}"
-          class="date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}${di === 0 ? ' w2-sep' : ''}"
-          onclick="toggleDate(${gi},${ri},2,${di})"
-          title="${fmt(d)} 클릭하여 토글">${on ? '●' : ''}</td>`;
-                    });
-
-                    h += `</tr>`;
-                });
-
-                // 행 추가 버튼
-                h += `<tr class="add-row-tr ${rowCls}"><td colspan="19">
-      <button class="btn-add-row" onclick="addRow(${gi})">+ ${group.dept} 행 추가</button>
-    </td></tr>`;
-            });
-
-            h += `</tbody></table>`;
-            document.getElementById('tableWrap').innerHTML = h;
-            setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 20);
-        }
-
-        // ════════════════════════════════════════════
-        //  날짜 자동 파싱 & 채우기
-        // ════════════════════════════════════════════
-
-        /**
-         * 업무 텍스트에서 날짜 범위를 파싱합니다.
-         * 지원 패턴:
-         *   (3/12)         → 단일 날짜
-         *   (~3/15)        → 해당 날까지
-         *   (3/12~3/15)    → 날짜 범위
-         *   (3월) / (4월 중) → 해당 월 전체
-         */
-        function parseTaskDates(task) {
-            const Y = new Date().getFullYear();
-
-            // (M/D~M/D) 범위
-            let m = task.match(/\((\d{1,2})\/(\d{1,2})\s*~\s*(\d{1,2})\/(\d{1,2})\)/);
-            if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };
-
-            // (~M/D) 해당 날까지
-            m = task.match(/\(~(\d{1,2})\/(\d{1,2})\)/);
-            if (m) return { start: new Date(2000, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };
-
-            // (M/D 완료) 또는 (M/D완료)
-            m = task.match(/\((\d{1,2})\/(\d{1,2})\s*완료\)/);
-            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }
-
-            // (M/D) 단일 날짜
-            m = task.match(/\((\d{1,2})\/(\d{1,2})\)/);
-            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }
-
-            // (M월 중순) / (M월 중) / (M월) 등
-            m = task.match(/\((\d{1,2})월(?:\s*(?:초|중순|중|말))?\)/);
-            if (m) {
-                const mo = +m[1] - 1;
-                return { start: new Date(Y, mo, 1), end: new Date(Y, mo + 1, 0) };
-            }
-
-            return null; // 날짜 없음
-        }
-
-        /**
-         * 주어진 날짜 범위에서 weekDates(7일) 중 해당하는 인덱스 반환
-         */
-        function getActiveIndices(start, end, weekDates) {
-            // 비교를 위해 시간 정규화
-            const s = new Date(start); s.setHours(0, 0, 0, 0);
-            const e = new Date(end); e.setHours(23, 59, 59, 0);
-            return weekDates.reduce((acc, d, i) => {
-                const dt = new Date(d); dt.setHours(12, 0, 0, 0);
-                if (dt >= s && dt <= e) acc.push(i);
-                return acc;
-            }, []);
-        }
-
-        /**
-         * 현재 표시 주차 계산
-         */
-        function getCurrentWeeks() {
-            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));
-            const w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));
-            return { w1, w2 };
-        }
-
-        /**
-         * 단일 행 날짜 자동 채우기 (업무내용 변경 시 호출)
-         */
-        function autoFillRow(gi, ri) {
-            const row = groups[gi].rows[ri];
-            const { w1, w2 } = getCurrentWeeks();
-
-            if (row.status === '완료') {
-                // 완료 → 이미 끝난 업무, ● 없음
-                row.d1 = [];
-                row.d2 = [];
-            } else {
-                const parsed = parseTaskDates(row.task);
-                if (parsed) {
-                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);
-                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);
-                } else if (row.status === '진행중') {
-                    // 날짜 명시 없는 진행중 → 평일 전체
-                    row.d1 = [0, 1, 2, 3, 4];
-                    row.d2 = [0, 1, 2, 3, 4];
-                }
-                // 날짜 없는 예정 → 변경 없음
-            }
-            saveToStorage();
-            renderOnly();
-        }
-
-        /**
-         * 전체 행 일괄 자동 채우기 버튼
-         */
-        function autoFillAllDates() {
-            const { w1, w2 } = getCurrentWeeks();
-            let count = 0;
-
-            groups.forEach(group => {
-                group.rows.forEach(row => {
-                    if (row.status === '완료') {
-                        // 완료 → 이미 끝난 업무, ● 없음
-                        row.d1 = [];
-                        row.d2 = [];
-                        count++;
-                    } else {
-                        const parsed = parseTaskDates(row.task);
-                        if (parsed) {
-                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);
-                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);
-                            count++;
-                        } else if (row.status === '진행중') {
-                            row.d1 = [0, 1, 2, 3, 4];
-                            row.d2 = [0, 1, 2, 3, 4];
-                            count++;
-                        }
-                        // 날짜 없는 예정 → 변경 없음
-                    }
-                });
-            });
-
-            saveToStorage();
-            renderOnly();
-
-            const msg = document.getElementById('saveMsg');
-            msg.textContent = `🔄 ${count}개 행 날짜 자동 채우기 완료!`;
-            msg.classList.add('show');
-            setTimeout(() => { msg.textContent = '✅ 저장되었습니다'; msg.classList.remove('show'); }, 2200);
-        }
-
-        // ════════════════════════════════════════════
-        //  오늘 열 하나의 큰 박스 오버레이
-        // ════════════════════════════════════════════
-        function drawTodayBox() {
-            // 기존 오버레이 제거
-            document.querySelectorAll('.today-col-overlay').forEach(el => el.remove());
-
-            const tableWrap = document.getElementById('tableWrap');
-            const scrollEl = document.querySelector('.table-scroll');
-            if (!tableWrap || !scrollEl) return;
-
-            tableWrap.style.position = 'relative';
-
-            // 날짜 엸 요소 가삸오기 (td.today + th.today-th)
-            const cells = tableWrap.querySelectorAll('.today, .today-th');
-            if (cells.length === 0) return;
-
-            const wrapRect = tableWrap.getBoundingClientRect();
-            const scrollLeft = scrollEl.scrollLeft;
-
-            // x좌표바로 그룹화 (같은 열)
-            const colMap = {};
-            cells.forEach(el => {
-                const r = el.getBoundingClientRect();
-                const xKey = Math.round(r.left);
-                if (!colMap[xKey]) colMap[xKey] = [];
-                colMap[xKey].push(r);
-            });
-
-            Object.values(colMap).forEach(rects => {
-                const table = tableWrap.querySelector('table');
-                const tableRect = table.getBoundingClientRect();
-
-                const top = Math.min(...rects.map(r => r.top)) - wrapRect.top;
-                // 테이블의 실제 바닥까지 박스를 확장
-                const bottom = tableRect.bottom - wrapRect.top;
-                const left = Math.min(...rects.map(r => r.left)) - wrapRect.left + scrollLeft;
-                const width = Math.max(...rects.map(r => r.width));
-
-                const box = document.createElement('div');
-                box.className = 'today-col-overlay';
-                box.style.top = `${top}px`;
-                box.style.left = `${left}px`;
-                box.style.width = `${width}px`;
-                box.style.height = `${bottom - top}px`;
-                tableWrap.appendChild(box);
-            });
-        }
-
-        // ════════════════════════════════════════════
-        //  1주/2주 경계 세로선 오버레이 (영역 끝까지)
-        // ════════════════════════════════════════════
-        function drawW2SepLine() {
-            document.querySelectorAll('.w2-sep-overlay').forEach(el => el.remove());
-
-            const tableWrap = document.getElementById('tableWrap');
-            const scrollEl = document.querySelector('.table-scroll');
-            if (!tableWrap || !scrollEl) return;
-
-            // w2-sep 클래스 셀 중 첫 번째 데이터 셀 기준으로 x 위치 파악
-            const sepCell = tableWrap.querySelector('td.w2-sep, th.w2-sep');
-            if (!sepCell) return;
-
-            const table = tableWrap.querySelector('table');
-            const wrapRect = tableWrap.getBoundingClientRect();
-            const tableRect = table.getBoundingClientRect();
-            const cellRect = sepCell.getBoundingClientRect();
-
-            const left = cellRect.left - wrapRect.left + scrollEl.scrollLeft - 1;
-            const top = 0;
-            const height = tableRect.bottom - wrapRect.top;
-
-            const line = document.createElement('div');
-            line.className = 'w2-sep-overlay';
-            line.style.cssText = `
-                position: absolute;
-                top: ${top}px;
-                left: ${left}px;
-                width: 1px;
-                height: ${height}px;
-                background: #2d5f9e;
-                pointer-events: none;
-                z-index: 10;
-            `;
-            tableWrap.appendChild(line);
-        }
-
-        // 스크롤·리사이즈 시 재계산
-        document.querySelector('.table-scroll').addEventListener('scroll', () => { drawTodayBox(); drawW2SepLine(); });
-        window.addEventListener('resize', () => { drawTodayBox(); drawW2SepLine(); });
-
-        render();
-        // 렌더링 후 DOM 반영 대기
-        setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 50);
-    </script>
+
+  renderSidebar();
+  renderMessages();
+}
+
+// ═══════════════════════════════════════
+//  MESSAGES
+// ═══════════════════════════════════════
+function addMsg(roomId, role, content, name, avatarColor, bubbleClass='') {
+  if (!messages[roomId]) messages[roomId] = [];
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  messages[roomId].push({ role, content, time, name, avatarColor, bubbleClass });
+  if (currentRoom === roomId) renderMessages();
+}
+
+function addSystemMsg(roomId, content) {
+  addMsg(roomId, 'system', content, 'SYSTEM', '#888', 'system');
+}
+
+function renderMessages() {
+  const el = document.getElementById('messages');
+  const msgs = messages[currentRoom] || [];
+  el.innerHTML = msgs.map(m => {
+    if (m.role === 'system') {
+      return `<div style="display:flex;justify-content:center;">
+        <div class="msg-bubble system" style="max-width:80%;text-align:left;">${m.content}</div>
+      </div>`;
+    }
+    const isSelf = m.role === 'user';
+    return `
+      <div class="msg-wrap ${isSelf ? 'self' : ''}">
+        <div class="msg-avatar" style="background:${m.avatarColor}">${m.name ? m.name[0] : '?'}</div>
+        <div class="msg-content">
+          <div class="msg-name">${m.name} · ${m.time}</div>
+          <div class="msg-bubble ${m.bubbleClass || ''}">${m.content}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ═══════════════════════════════════════
+//  CHAT INPUT
+// ═══════════════════════════════════════
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function sendMessage() {
+  const inp = document.getElementById('chatInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  addMsg(currentRoom, 'user', val, '나', '#1e3a5f');
+  // 간단한 응답
+  setTimeout(() => {
+    addMsg(currentRoom, 'assistant', '📌 보고서 제출은 [보고서 제출] 버튼을 이용해 주세요. 자유 형식으로 입력하면 AI가 자동으로 파싱합니다.', '🤖 AI', '#2d5f9e', 'ai-result');
+  }, 600);
+}
+
+// ═══════════════════════════════════════
+//  보고서 제출 (AI 파싱)
+// ═══════════════════════════════════════
+function openSubmitModal() {
+  document.getElementById('submitModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function switchTab(tabId) {
+  ['tabText','tabStructured'].forEach(id => {
+    document.getElementById(id).style.display = id === tabId ? '' : 'none';
+  });
+  ['tabTextBtn','tabStructuredBtn'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === tabId+'Btn');
+  });
+}
+
+async function parseTextReport() {
+  const content = document.getElementById('submitContent').value.trim();
+  const team = document.getElementById('submitTeam').value;
+  if (!content) { alert('보고 내용을 입력해 주세요.'); return; }
+  if (!settings.apiKey) { alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.'); return; }
+
+  document.getElementById('parsedPreview').style.display = '';
+  document.getElementById('parsedContent').textContent = '⏳ AI가 파싱 중입니다...';
+
+  try {
+    const rows = await callGeminiParseReport(content, team);
+    document.getElementById('parsedContent').textContent = rows.map(r =>
+      `[${r.status}] ${r.task} — ${r.owner || '미지정'}`
+    ).join('\n');
+  } catch(e) {
+    document.getElementById('parsedContent').textContent = '❌ 파싱 오류: ' + e.message;
+  }
+}
+
+async function submitReport() {
+  const tab = document.getElementById('tabText').style.display !== 'none' ? 'text' : 'structured';
+  const team = document.getElementById(tab === 'text' ? 'submitTeam' : 'submitTeam2').value;
+  const leader = document.getElementById('submitLeader').value.trim() || '팀장';
+
+  if (!team) { alert('팀을 선택해 주세요.'); return; }
+
+  let rows = [];
+  if (tab === 'text') {
+    const content = document.getElementById('submitContent').value.trim();
+    if (!content) { alert('보고 내용을 입력해 주세요.'); return; }
+    if (!settings.apiKey) { alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.'); return; }
+
+    closeModal('submitModal');
+    addMsg(team, 'user', `[주간보고서 제출]\n${content}`, leader, TEAM_COLORS[team] || '#666', 'report-paste');
+    addMsg(team, 'system', '⏳ AI가 보고서를 분석 중입니다...');
+
+    try {
+      rows = await callGeminiParseReport(content, team);
+    } catch(e) {
+      addMsg(team, 'system', '❌ AI 파싱 오류: ' + e.message);
+      return;
+    }
+  } else {
+    // 구조화 입력 — parsedRows 사용
+    rows = parsedRows;
+    if (!rows.length) { alert('업무 행을 추가해 주세요.'); return; }
+    closeModal('submitModal');
+    addMsg(team, 'user', `[구조화 보고서 제출]\n${rows.map(r=>`[${r.status}] ${r.task} (${r.owner})`).join('\n')}`, leader, TEAM_COLORS[team] || '#666', 'report-paste');
+  }
+
+  const now = new Date();
+  reports[team] = {
+    leader, rows,
+    time: `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`
+  };
+
+  addMsg(team, 'assistant',
+    `✅ 보고서 접수 완료!\n\n📋 파싱된 업무 (${rows.length}건):\n${rows.map(r=>`• [${r.status}] ${r.task}${r.owner ? ' — '+r.owner : ''}`).join('\n')}\n\n취합방에서 전체 취합을 진행해 주세요.`,
+    '🤖 AI', '#2d5f9e', 'ai-result'
+  );
+
+  addMsg('collect', 'system', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
+  renderSidebar();
+  renderRightPanel();
+  toast(`✅ ${team} 팀 보고서 제출 완료!`);
+
+  // 폼 초기화
+  document.getElementById('submitContent').value = '';
+  document.getElementById('parsedPreview').style.display = 'none';
+}
+
+// ═══════════════════════════════════════
+//  구조화 입력 행 관리
+// ═══════════════════════════════════════
+function addRowItem() {
+  parsedRows.push({ status: '진행중', task: '', owner: '' });
+  renderRowList();
+}
+function deleteRowItem(i) {
+  parsedRows.splice(i, 1);
+  renderRowList();
+}
+function renderRowList() {
+  const el = document.getElementById('rowList');
+  if (!el) return;
+  el.innerHTML = parsedRows.map((r, i) => `
+    <div class="row-item">
+      <select class="form-select" style="width:80px;padding:4px 6px;font-size:11px;" onchange="parsedRows[${i}].status=this.value">
+        <option ${r.status==='완료'?'selected':''}>완료</option>
+        <option ${r.status==='진행중'?'selected':''}>진행중</option>
+        <option ${r.status==='예정'?'selected':''}>예정</option>
+      </select>
+      <input type="text" class="form-input" style="flex:1;padding:5px 8px;font-size:11.5px;" placeholder="업무내용" value="${r.task}" oninput="parsedRows[${i}].task=this.value">
+      <input type="text" class="form-input" style="width:80px;padding:5px 8px;font-size:11px;" placeholder="담당자" value="${r.owner}" oninput="parsedRows[${i}].owner=this.value">
+      <button class="row-del-btn" onclick="deleteRowItem(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+//  CLAUDE API 호출 — 보고서 파싱
+// ═══════════════════════════════════════
+// ── 공통 Gemini 호출 (429 시 자동 재시도) ──
+async function callGemini(prompt, retries = 4) {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+    );
+    if (res.status === 429) {
+      const wait = (i + 1) * 8000;
+      addMsg('collect', 'system', `⏳ API 요청 한도 — ${wait/1000}초 후 재시도 (${i+1}/${retries})...`);
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Gemini API 오류: ${res.status} — ${errText.slice(0,120)}`);
+    }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+  throw new Error('Gemini API 429: API 키 확인 또는 잠시 후 다시 시도해 주세요.');
+}
+
+async function callGeminiParseReport(text, team) {
+  const prompt = `당신은 주간업무보고서를 구조화된 JSON으로 변환하는 파서입니다.
+
+팀명: ${team}
+입력된 보고 텍스트:
+"""
+${text}
+"""
+
+각 업무 항목을 파싱하여 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력:
+[
+  {
+    "status": "완료|진행중|예정 중 하나",
+    "task": "업무내용 (날짜 패턴 포함 가능. 예: 브랜드 가이드라인 시안 (3/14완료))",
+    "owner": "담당자 이름 (없으면 빈 문자열)",
+    "d1": [],
+    "d2": []
+  }
+]
+
+규칙:
+- 완료된 업무 → status: "완료"
+- 진행 중 → status: "진행중"
+- 예정 → status: "예정"
+- task에는 날짜 힌트를 그대로 포함시켜 (예: (3/10~3/21), (3/14완료), (3월 중))
+- d1, d2는 항상 빈 배열로 설정`;
+
+  const txt = await callGemini(prompt);
+  const clean = txt.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
+// ═══════════════════════════════════════
+//  전체 취합 & HTML 업데이트
+// ═══════════════════════════════════════
+async function runCollectAll() {
+  const received = Object.keys(reports);
+  if (!received.length) {
+    alert('아직 수신된 팀 보고서가 없습니다.\n각 팀장이 보고서를 제출해야 합니다.');
+    return;
+  }
+  if (!settings.apiKey) {
+    alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.');
+    return;
+  }
+
+  switchRoom('collect');
+
+  const missing = settings.teams.filter(t => !reports[t]);
+  if (missing.length > 0) {
+    const go = confirm(`아직 보고서를 제출하지 않은 팀이 있습니다:\n${missing.join(', ')}\n\n수신된 팀만으로 취합할까요?`);
+    if (!go) return;
+  }
+
+  addMsg('collect', 'system', `⚡ 취합 시작 — 수신된 ${received.length}개 팀 보고서 처리 중...`);
+
+  // 로딩 메시지
+  const loadId = addLoadingMsg();
+
+  try {
+    const summary = await callGeminiSummarize();
+    removeLoadingMsg(loadId);
+    addMsg('collect', 'assistant', summary, '🤖 AI 취합', '#1e3a5f', 'ai-result');
+    generateUpdatedReport();
+    addMsg('collect', 'system', `✅ 주간업무보고 HTML 업데이트 완료! [미리보기] 버튼으로 확인하거나 [다운로드] 하세요.`);
+    toast('✅ 취합 완료! HTML 업데이트됨');
+  } catch(e) {
+    removeLoadingMsg(loadId);
+    addMsg('collect', 'system', '❌ 취합 오류: ' + e.message);
+  }
+  renderRightPanel();
+}
+
+let _loadingMsgIdx = null;
+function addLoadingMsg() {
+  const el = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.id = 'loadingMsg';
+  div.style.cssText = 'display:flex;justify-content:center;padding:8px;';
+  div.innerHTML = `<div class="msg-bubble system"><div class="loading-dots"><span></span><span></span><span></span></div> AI 분석 중...</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return 'loadingMsg';
+}
+function removeLoadingMsg() {
+  const el = document.getElementById('loadingMsg');
+  if (el) el.remove();
+}
+
+async function callGeminiSummarize() {
+  const allReports = Object.entries(reports).map(([team, rep]) => {
+    const rows = rep.rows.map(r => `  [${r.status}] ${r.task}${r.owner ? ' — '+r.owner : ''}`).join('\n');
+    return `=== ${team} 팀 (${rep.leader}, ${rep.rows.length}건) ===\n${rows}`;
+  }).join('\n\n');
+
+  const prompt = `다음은 각 팀장이 제출한 주간업무보고서입니다.
+
+${allReports}
+
+전체를 취합하여 다음 형식으로 요약해 주세요:
+1. 전체 요약 (2-3줄)
+2. 팀별 현황 (각 팀의 핵심 업무 1-2줄)
+3. 이슈/주의사항 (있는 경우)
+4. 총 업무 건수 통계 (완료/진행중/예정)
+
+간결하고 명확하게 작성하세요.`;
+
+  return await callGemini(prompt);
+}
+
+// ═══════════════════════════════════════
+//  HTML 보고서 생성 (주간업무보고 업데이트)
+// ═══════════════════════════════════════
+let updatedReportHTML = null;
+
+function generateUpdatedReport() {
+  // defaultGroups를 reports 데이터로 업데이트
+  const newGroups = settings.teams.map((team, idx) => {
+    const clsMap = ['BAT','PMI','KTG','ELIZ','UPLUS'];
+    const cls = clsMap[idx] || 'BAT';
+    const rep = reports[team];
+    if (!rep || !rep.rows.length) {
+      return { dept: team, cls, rows: [{ status:'', owner:'', task:'', d1:[], d2:[] }] };
+    }
+    return {
+      dept: team,
+      cls,
+      rows: rep.rows.map(r => ({
+        status: r.status || '',
+        owner: r.owner || rep.leader || '',
+        task: r.task || '',
+        d1: r.d1 || [],
+        d2: r.d2 || []
+      }))
+    };
+  });
+
+  // 원본 HTML을 가져와서 defaultGroups 데이터를 교체
+  // (실제로는 원본 HTML 템플릿을 삽입)
+  updatedReportHTML = buildReportHTML(newGroups);
+}
+
+function buildReportHTML(newGroups) {
+  // 원본 HTML을 기반으로 groups 데이터만 교체
+  const groupsJson = JSON.stringify(newGroups);
+  return REPORT_TEMPLATE.replace(
+    /const defaultGroups = \[[\s\S]*?\];/,
+    `const defaultGroups = ${groupsJson};`
+  ).replace(
+    /let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/,
+    `let groups = (()=>{ try{ const s=localStorage.getItem('weeklyReport'); return s ? JSON.parse(s) : JSON.parse(JSON.stringify(defaultGroups)); } catch(e){ return JSON.parse(JSON.stringify(defaultGroups)); } })();`
+  );
+}
+
+// ═══════════════════════════════════════
+//  미리보기 & 다운로드
+// ═══════════════════════════════════════
+function openPreview() {
+  if (!updatedReportHTML) {
+    // 미취합 상태면 원본 표시
+    document.getElementById('previewFrame').src = '';
+    document.getElementById('previewFrame').srcdoc = REPORT_TEMPLATE;
+  } else {
+    document.getElementById('previewFrame').srcdoc = updatedReportHTML;
+  }
+  document.getElementById('previewModal').classList.add('open');
+}
+
+function downloadReport() {
+  const html = updatedReportHTML || REPORT_TEMPLATE;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const now = new Date();
+  a.download = `weekly-report-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.html`;
+  a.click();
+}
+
+// ═══════════════════════════════════════
+//  RIGHT PANEL
+// ═══════════════════════════════════════
+function renderRightPanel() {
+  const el = document.getElementById('rightPanel');
+  const total = settings.teams.length;
+  const done = Object.keys(reports).length;
+
+  let html = `
+    <div class="progress-section">
+      <div class="progress-title">팀별 제출 현황 (${done}/${total})</div>
+      <div class="team-progress">
+        ${settings.teams.map((t,i) => {
+          const rep = reports[t];
+          const pct = rep ? 100 : 0;
+          const colors = ['#1e3a5f','#c0392b','#27ae60','#8e44ad','#d4a800'];
+          const color = colors[i % colors.length];
+          return `
+            <div class="team-row">
+              <div class="team-row-name">${t}</div>
+              <div class="team-row-bar"><div class="team-row-fill" style="width:${pct}%;background:${color}"></div></div>
+              <div class="team-row-stat" style="color:${rep?'#27ae60':'#aaa'}">${rep?'✓ 완료':'대기'}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="ai-action-box">
+      <div class="ai-action-title">🤖 AI 에이전트 액션</div>
+      <div class="ai-action-btns">
+        <button class="btn btn-success" style="width:100%;font-size:12px;" onclick="runCollectAll()">⚡ 전체 취합 & HTML 업데이트</button>
+        <button class="btn btn-outline" style="width:100%;font-size:12px;" onclick="openPreview()">👁 보고서 미리보기</button>
+        <button class="btn btn-primary" style="width:100%;font-size:12px;" onclick="downloadReport()">⬇️ HTML 다운로드</button>
+      </div>
+    </div>
+  `;
+
+  // 수신된 보고서 카드
+  if (Object.keys(reports).length > 0) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:4px;">수신된 보고서</div>`;
+    Object.entries(reports).forEach(([team, rep]) => {
+      const color = TEAM_COLORS[team] || '#666';
+      html += `
+        <div class="report-card">
+          <div class="report-card-header" style="background:${color}15;color:${color}">
+            <div style="width:24px;height:24px;border-radius:6px;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${(TEAM_ABBR[team]||team).substring(0,3)}</div>
+            ${team} — ${rep.leader}
+            <span class="tag tag-done" style="margin-left:auto;">${rep.rows.length}건</span>
+          </div>
+          <div class="report-card-body">${rep.rows.map(r=>`[${r.status}] ${r.task}${r.owner?' — '+r.owner:''}`).join('\n')}</div>
+        </div>
+      `;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function refreshStatus() { renderRightPanel(); toast('새로고침 완료'); }
+
+// ═══════════════════════════════════════
+//  SETTINGS MODAL
+// ═══════════════════════════════════════
+function openSettings() {
+  document.getElementById('apiKeyInput').value = settings.apiKey || '';
+  document.getElementById('teamsInput').value = settings.teams.join(',');
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════
+//  REPORT TEMPLATE (원본 HTML)
+// ═══════════════════════════════════════
+const REPORT_TEMPLATE = `WEEKLY_REPORT_PLACEHOLDER`;
+
+// ═══════════════════════════════════════
+//  START
+// ═══════════════════════════════════════
+init();
+</script>
 </body>
-
 </html>
