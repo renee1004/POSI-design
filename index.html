@@ -721,7 +721,10 @@ body {
 //  STATE
 // ═══════════════════════════════════════
 let settings = {
-  apiKey: 'YOUR_GEMINI_API_KEY_HERE', // ← 여기에 API 키 입력
+  apiKey: 'AIzaSyDgUXkWkMgJmcccrC462KmwdlZkHsWMEKoE', // ← 여기에 Gemini API 키 입력
+  ghToken: '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',  // ← 여기에 GitHub Token 입력
+  ghRepo: 'renee1004/POSI-design',    // ← GitHub 저장소 (소유자/저장소명)
+  ghBranch: 'main',
   teams: ['BAT','PMI','KT&G글로벌','엘리자베스아덴','U+']
 };
 let currentRoom = 'collect';
@@ -742,6 +745,93 @@ const TEAM_ABBR = {
   'BAT':'BAT','PMI':'PMI','KT&G글로벌':'KTG','엘리자베스아덴':'ELZ','U+':'U+','collect':'🤖'
 };
 
+
+// ═══════════════════════════════════════
+//  GitHub API — 보고서 저장/불러오기
+// ═══════════════════════════════════════
+
+function teamFileName(team) {
+  // 팀명을 안전한 파일명으로 변환
+  return 'data/' + team.replace(/[^a-zA-Z0-9가-힣]/g, '_') + '.json';
+}
+
+async function githubSaveReport(team, data) {
+  if (!settings.ghToken || settings.ghToken === 'YOUR_GITHUB_TOKEN_HERE') {
+    console.warn('GitHub Token 미설정 — 로컬에만 저장');
+    return false;
+  }
+  const path = teamFileName(team);
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const url = `https://api.github.com/repos/${settings.ghRepo}/contents/${path}`;
+
+  // 기존 파일 SHA 조회 (업데이트 시 필요)
+  let sha = null;
+  try {
+    const r = await fetch(url, { headers: {
+      'Authorization': `token ${settings.ghToken}`,
+      'Accept': 'application/vnd.github.v3+json'
+    }});
+    if (r.ok) { const d = await r.json(); sha = d.sha; }
+  } catch(e) {}
+
+  const body = {
+    message: `${team} 팀 주간보고서 업데이트`,
+    content,
+    branch: settings.ghBranch
+  };
+  if (sha) body.sha = sha;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${settings.ghToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+async function githubLoadAllReports() {
+  if (!settings.ghToken || settings.ghToken === 'YOUR_GITHUB_TOKEN_HERE') return {};
+  const result = {};
+  await Promise.all(settings.teams.map(async team => {
+    try {
+      const path = teamFileName(team);
+      const url = `https://api.github.com/repos/${settings.ghRepo}/contents/${path}`;
+      const res = await fetch(url, { headers: {
+        'Authorization': `token ${settings.ghToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }});
+      if (res.ok) {
+        const d = await res.json();
+        const decoded = decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
+        result[team] = JSON.parse(decoded);
+      }
+    } catch(e) {}
+  }));
+  return result;
+}
+
+async function githubLoadStatus() {
+  // 오른쪽 패널 새로고침 시 GitHub에서 최신 상태 로드
+  if (!settings.ghToken || settings.ghToken === 'YOUR_GITHUB_TOKEN_HERE') return;
+  addMsg('collect', 'system', '🔄 GitHub에서 최신 보고서 현황 로드 중...');
+  const loaded = await githubLoadAllReports();
+  let count = 0;
+  Object.entries(loaded).forEach(([team, data]) => {
+    if (data && data.rows) { reports[team] = data; count++; }
+  });
+  if (count > 0) {
+    addMsg('collect', 'system', `✅ ${count}개 팀 보고서 로드 완료`);
+    renderSidebar();
+    renderRightPanel();
+  } else {
+    addMsg('collect', 'system', '📭 아직 제출된 보고서가 없습니다.');
+  }
+}
+
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
@@ -750,7 +840,7 @@ function init() {
   initRooms();
   switchRoom('collect');
   renderRightPanel();
-  addSystemMsg('collect', `👋 안녕하세요! POSI DESIGN 주간업무보고 AI 취합 허브입니다.\n\n📌 사용 방법:\n1. 각 팀장이 팀 방에 접속하여 [보고서 제출] 클릭\n2. 자유 형식으로 보고 내용 입력 (AI가 자동 파싱)\n3. 모든 팀 보고서 수신 후 [전체 취합 & 보고서 업데이트] 클릭\n4. AI가 취합·정리하여 주간업무보고 HTML 자동 업데이트\n\n⚙️ 시작 전 [설정]에서 API 키를 입력해 주세요.`);
+  addSystemMsg('collect', `👋 안녕하세요! POSI DESIGN 주간업무보고 AI 취합 허브입니다.\n\n📌 사용 방법:\n1. 각 팀장이 팀 방에 접속하여 [보고서 제출] 클릭\n2. 자유 형식으로 보고 내용 입력 (AI가 자동 파싱)\n3. 모든 팀 보고서 수신 후 [전체 취합 & 보고서 업데이트] 클릭\n4. AI가 취합·정리하여 주간업무보고 HTML 자동 업데이트\n\n📌 각 팀장이 보고서 제출 시 GitHub에 자동 저장\n담당자가 취합 클릭 시 GitHub에서 자동 수집`);
 }
 
 function autoSaveApiKey(val) {
@@ -987,6 +1077,14 @@ async function submitReport() {
   );
 
   addMsg('collect', 'system', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
+
+  // GitHub에 자동 저장
+  if (settings.ghToken && settings.ghToken !== 'YOUR_GITHUB_TOKEN_HERE') {
+    addMsg(team, 'system', '💾 GitHub에 저장 중...');
+    const saved = await githubSaveReport(team, reports[team]);
+    addMsg(team, 'system', saved ? '✅ GitHub 저장 완료 — 다른 팀원도 이 보고서를 볼 수 있습니다.' : '⚠️ GitHub 저장 실패 — 로컬에만 저장됨');
+  }
+
   renderSidebar();
   renderRightPanel();
   toast(`✅ ${team} 팀 보고서 제출 완료!`);
@@ -1088,6 +1186,17 @@ ${text}
 //  전체 취합 & HTML 업데이트
 // ═══════════════════════════════════════
 async function runCollectAll() {
+  // GitHub에서 최신 보고서 먼저 로드
+  if (settings.ghToken && settings.ghToken !== 'YOUR_GITHUB_TOKEN_HERE') {
+    addMsg('collect', 'system', '🔄 GitHub에서 최신 보고서 로드 중...');
+    const loaded = await githubLoadAllReports();
+    Object.entries(loaded).forEach(([team, data]) => {
+      if (data && data.rows) reports[team] = data;
+    });
+    renderSidebar();
+    renderRightPanel();
+  }
+
   const received = Object.keys(reports);
   if (!received.length) {
     alert('아직 수신된 팀 보고서가 없습니다.\n각 팀장이 보고서를 제출해야 합니다.');
@@ -1317,7 +1426,7 @@ function renderRightPanel() {
   el.innerHTML = html;
 }
 
-function refreshStatus() { renderRightPanel(); toast('새로고침 완료'); }
+function refreshStatus() { githubLoadStatus(); }
 
 // ═══════════════════════════════════════
 //  SETTINGS MODAL
