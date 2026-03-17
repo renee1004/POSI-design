@@ -493,16 +493,6 @@
             }
         }
     </style>
-    .btn-server {
-  background: #fff3cd;
-  color: #7a5d00;
-  border: 1px solid #c9a227;
-}
-
-.btn-server:hover {
-  background: #ffe8a1;
-}
-
 </head>
 
 <body>
@@ -514,7 +504,6 @@
                 &nbsp;|&nbsp; 🔄 업무내용 저장 시 날짜 자동 채우기</span>
             <button class="btn btn-save" onclick="saveNow()">💾 저장</button>
             <button class="btn btn-auto" onclick="autoFillAllDates()">🔄 날짜 자동 채우기</button>
-            <button class="btn btn-server" onclick="loadServerLatest(this)">⬇️ 서버 최신 불러오기</button>
             <button class="btn btn-reset" onclick="resetData()">↺ 초기화</button>
             <button class="btn btn-print" onclick="window.print()">🖨 인쇄</button>
         </div>
@@ -734,7 +723,45 @@
             h += `</tr></thead><tbody>`;
 
             // ── 데이터 행 ──
+            // 구분 순서: 완료 → 진행중 → 예정 순으로 정렬 (저장 데이터는 그대로 유지)
+            const STATUS_ORDER = { '완료': 0, '진행중': 1, '예정': 2, '': 3 };
+
+            // ── 렌더 전 날짜 자동 매칭 (task 힌트 → d1/d2) ──
+            const _w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));
+            const _w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));
+            groups.forEach(group => {
+                group.rows.forEach(row => {
+                    if (row.status === '완료') {
+                        // 완료 업무: task에 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸
+                        const parsed = parseTaskDates(row.task);
+                        if (parsed) {
+                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);
+                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);
+                        } else {
+                            row.d1 = [];
+                            row.d2 = [];
+                        }
+                    } else {
+                        const parsed = parseTaskDates(row.task);
+                        if (parsed) {
+                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);
+                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);
+                        } else if (row.status === '진행중') {
+                            // 날짜 힌트 없는 진행중 → 해당 주 평일 전체
+                            row.d1 = [0, 1, 2, 3, 4];
+                            row.d2 = [0, 1, 2, 3, 4];
+                        } else {
+                            row.d1 = [];
+                            row.d2 = [];
+                        }
+                    }
+                });
+            });
+
             groups.forEach((group, gi) => {
+                group.rows.sort((a, b) =>
+                    (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)
+                );
                 const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;
                 const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';
 
@@ -889,9 +916,15 @@
             const { w1, w2 } = getCurrentWeeks();
 
             if (row.status === '완료') {
-                // 완료 → 이미 끝난 업무, ● 없음
-                row.d1 = [];
-                row.d2 = [];
+                // 완료 → 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸
+                const parsed = parseTaskDates(row.task);
+                if (parsed) {
+                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);
+                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);
+                } else {
+                    row.d1 = [];
+                    row.d2 = [];
+                }
             } else {
                 const parsed = parseTaskDates(row.task);
                 if (parsed) {
@@ -918,9 +951,15 @@
             groups.forEach(group => {
                 group.rows.forEach(row => {
                     if (row.status === '완료') {
-                        // 완료 → 이미 끝난 업무, ● 없음
-                        row.d1 = [];
-                        row.d2 = [];
+                        // 완료 → 완료일이 있으면 해당 날짜에 ●
+                        const parsed = parseTaskDates(row.task);
+                        if (parsed) {
+                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);
+                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);
+                        } else {
+                            row.d1 = [];
+                            row.d2 = [];
+                        }
                         count++;
                     } else {
                         const parsed = parseTaskDates(row.task);
