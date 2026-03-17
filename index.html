@@ -531,7 +531,7 @@ body {
   <div class="topbar-right">
     <div class="status-dot"></div>
     <div class="status-txt">AI 에이전트 대기중</div>
-    <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);font-size:11px;" onclick="openSettings()">⚙️ 설정</button>
+    <!-- 설정 버튼 비활성화 (API 키 하드코딩) -->
   </div>
 </div>
 
@@ -674,12 +674,12 @@ body {
     </div>
     <div class="modal-body">
       <div class="api-section">
-        <div class="api-section-title">🔑 Google Gemini API 키 (무료)</div>
+        <div class="api-section-title">AIzaSyDgUXkWkMgJmcccrC462KmwdlZkHsWMEKo</div>
         <div class="api-section-desc">무료 발급: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#856404">aistudio.google.com/apikey</a><br>키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
       </div>
       <div class="form-group">
         <label class="form-label">API Key</label>
-        <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza...">
+        <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza..." oninput="autoSaveApiKey(this.value)">
       </div>
       <div class="form-group">
         <label class="form-label">팀 목록 (쉼표로 구분)</label>
@@ -721,7 +721,7 @@ body {
 //  STATE
 // ═══════════════════════════════════════
 let settings = {
-  apiKey: '',
+  apiKey: 'YOUR_GEMINI_API_KEY_HERE', // ← 여기에 API 키 입력
   teams: ['BAT','PMI','KT&G글로벌','엘리자베스아덴','U+']
 };
 let currentRoom = 'collect';
@@ -753,6 +753,12 @@ function init() {
   addSystemMsg('collect', `👋 안녕하세요! POSI DESIGN 주간업무보고 AI 취합 허브입니다.\n\n📌 사용 방법:\n1. 각 팀장이 팀 방에 접속하여 [보고서 제출] 클릭\n2. 자유 형식으로 보고 내용 입력 (AI가 자동 파싱)\n3. 모든 팀 보고서 수신 후 [전체 취합 & 보고서 업데이트] 클릭\n4. AI가 취합·정리하여 주간업무보고 HTML 자동 업데이트\n\n⚙️ 시작 전 [설정]에서 API 키를 입력해 주세요.`);
 }
 
+function autoSaveApiKey(val) {
+  // 입력 즉시 localStorage에 저장 (저장 버튼 불필요)
+  settings.apiKey = val.trim();
+  try { localStorage.setItem('hubSettings', JSON.stringify(settings)); } catch(e) {}
+}
+
 function loadSettings() {
   try {
     const s = localStorage.getItem('hubSettings');
@@ -763,7 +769,9 @@ function loadSettings() {
 }
 
 function saveSettings() {
-  settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  // 하드코딩 키가 있으면 유지, 없을 때만 입력값 사용
+  const inputKey = document.getElementById('apiKeyInput').value.trim();
+  if (inputKey) settings.apiKey = inputKey;
   const teamsRaw = document.getElementById('teamsInput').value;
   settings.teams = teamsRaw.split(',').map(t => t.trim()).filter(Boolean);
   localStorage.setItem('hubSettings', JSON.stringify(settings));
@@ -1021,9 +1029,10 @@ function renderRowList() {
 // ═══════════════════════════════════════
 // ── 공통 Gemini 호출 (429 시 자동 재시도) ──
 async function callGemini(prompt, retries = 4) {
+  if (!settings.apiKey) throw new Error('API 키가 설정되지 않았습니다. ⚙️ 설정에서 Gemini API 키를 입력해 주세요.');
   for (let i = 0; i < retries; i++) {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${settings.apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
     );
@@ -1199,22 +1208,24 @@ function generateUpdatedReport() {
 function buildReportHTML(newGroups) {
   if (!REPORT_TEMPLATE) return '';
   const groupsJson = JSON.stringify(newGroups, null, 2);
+
   // 1. defaultGroups 교체
   let result = REPORT_TEMPLATE.replace(
     /const defaultGroups = \[[\s\S]*?\];/,
     `const defaultGroups = ${groupsJson};`
   );
-  // 2. groups 로드를 defaultGroups 직접 사용으로 교체 (localStorage 무시)
+
+  // 2. groups 로드 교체 (localStorage 무시 → defaultGroups 직접 사용)
   result = result.replace(
     /let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/,
-    `let groups = JSON.parse(JSON.stringify(defaultGroups));`
+    'let groups = JSON.parse(JSON.stringify(defaultGroups));'
   );
-  // 교체 검증
-  if (!result.includes(groupsJson.slice(0, 30))) {
-    console.warn('defaultGroups 교체 실패 — 원본 반환');
-    return REPORT_TEMPLATE;
-  }
-  return result;
+
+  // 3. 교체 검증
+  const succeeded = result !== REPORT_TEMPLATE && result.length > 1000;
+  console.log('[buildReportHTML] 교체:', succeeded, '길이:', result.length);
+
+  return succeeded ? result : REPORT_TEMPLATE;
 }
 
 // ═══════════════════════════════════════
@@ -1232,12 +1243,19 @@ function openPreview() {
 
 function downloadReport() {
   const html = updatedReportHTML || REPORT_TEMPLATE;
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  if (!html) { alert('다운로드할 보고서가 없습니다. 먼저 취합을 실행해주세요.'); return; }
+  // BOM 포함 UTF-8로 저장 (한글 깨짐 방지)
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const enc = new TextEncoder().encode(html);
+  const blob = new Blob([bom, enc], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   const now = new Date();
   a.download = `weekly-report-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.html`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 // ═══════════════════════════════════════
