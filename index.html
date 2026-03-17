@@ -1106,8 +1106,15 @@ async function runCollectAll() {
     const summary = await callGeminiSummarize();
     removeLoadingMsg(loadId);
     addMsg('collect', 'assistant', summary, '🤖 AI 취합', '#1e3a5f', 'ai-result');
-    generateUpdatedReport();
-    addMsg('collect', 'system', `✅ 주간업무보고 HTML 업데이트 완료! [미리보기] 버튼으로 확인하거나 [다운로드] 하세요.`);
+    // 템플릿 로드 대기 (최대 5초)
+    if (!REPORT_TEMPLATE) {
+      addMsg('collect', 'system', '⏳ 템플릿 로딩 대기 중...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    const ok = generateUpdatedReport();
+    if (ok !== false) {
+      addMsg('collect', 'system', `✅ 주간업무보고 HTML 업데이트 완료! [미리보기] 버튼으로 확인하거나 [다운로드] 하세요.`);
+    }
     toast('✅ 취합 완료! HTML 업데이트됨');
   } catch(e) {
     removeLoadingMsg(loadId);
@@ -1159,6 +1166,10 @@ ${allReports}
 let updatedReportHTML = null;
 
 function generateUpdatedReport() {
+  if (!REPORT_TEMPLATE) {
+    addMsg('collect', 'system', '❌ 보고서 템플릿 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return false;
+  }
   // defaultGroups를 reports 데이터로 업데이트
   const newGroups = settings.teams.map((team, idx) => {
     const clsMap = ['BAT','PMI','KTG','ELIZ','UPLUS'];
@@ -1186,15 +1197,24 @@ function generateUpdatedReport() {
 }
 
 function buildReportHTML(newGroups) {
-  // 원본 HTML을 기반으로 groups 데이터만 교체
-  const groupsJson = JSON.stringify(newGroups);
-  return REPORT_TEMPLATE.replace(
+  if (!REPORT_TEMPLATE) return '';
+  const groupsJson = JSON.stringify(newGroups, null, 2);
+  // 1. defaultGroups 교체
+  let result = REPORT_TEMPLATE.replace(
     /const defaultGroups = \[[\s\S]*?\];/,
     `const defaultGroups = ${groupsJson};`
-  ).replace(
-    /let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/,
-    `let groups = (()=>{ try{ const s=localStorage.getItem('weeklyReport'); return s ? JSON.parse(s) : JSON.parse(JSON.stringify(defaultGroups)); } catch(e){ return JSON.parse(JSON.stringify(defaultGroups)); } })();`
   );
+  // 2. groups 로드를 defaultGroups 직접 사용으로 교체 (localStorage 무시)
+  result = result.replace(
+    /let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/,
+    `let groups = JSON.parse(JSON.stringify(defaultGroups));`
+  );
+  // 교체 검증
+  if (!result.includes(groupsJson.slice(0, 30))) {
+    console.warn('defaultGroups 교체 실패 — 원본 반환');
+    return REPORT_TEMPLATE;
+  }
+  return result;
 }
 
 // ═══════════════════════════════════════
