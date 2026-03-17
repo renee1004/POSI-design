@@ -721,7 +721,7 @@ body {
 //  STATE
 // ═══════════════════════════════════════
 let settings = {
-  apiKey: 'AIzaSyDgUXkWkMgJmcccrC462KmwdlZkHsWMEKoE', // ← 여기에 Gemini API 키 입력
+  apiKey: 'AIzaSyDgUXkWkMgJmcccrC462KmwdlZkHsWMEKo', // ← 여기에 Gemini API 키 입력
   ghToken: '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',  // ← 여기에 GitHub Token 입력
   ghRepo: 'renee1004/POSI-design',    // ← GitHub 저장소 (소유자/저장소명)
   ghBranch: 'main',
@@ -1454,7 +1454,7 @@ let REPORT_TEMPLATE = '';
 // weekly-report.html을 같은 저장소에서 fetch
 (async () => {
   try {
-    const res = await fetch('./weekly-report.html');
+    const res = await fetch('./%EC%A3%BC%EA%B0%84%20%EB%B3%B4%EA%B3%A0%EC%84%9C.html');
     if (res.ok) REPORT_TEMPLATE = await res.text();
   } catch(e) { console.warn('weekly-report.html 로드 실패:', e); }
 })();
