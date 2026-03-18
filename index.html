@@ -782,26 +782,7 @@ function nl2br(value) {
   return escapeHtml(value).replace(/\n/g, '<br>');
 }
 
-let REPORT_TEMPLATE = '';
-let reportTemplatePromise = null;
-
-async function ensureReportTemplateLoaded(forceReload = false) {
-  if (REPORT_TEMPLATE && !forceReload) return REPORT_TEMPLATE;
-  if (!reportTemplatePromise || forceReload) {
-    reportTemplatePromise = fetch(`./weekly-report.html?v=${Date.now()}`, { cache: 'no-store' })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`weekly-report.html 로드 실패 (${res.status})`);
-        REPORT_TEMPLATE = await res.text();
-        return REPORT_TEMPLATE;
-      })
-      .catch((error) => {
-        console.error(error);
-        throw error;
-      });
-  }
-  return reportTemplatePromise;
-}
-
+const WEEKLY_REPORT_TEMPLATE = "<!DOCTYPE html>\n<html lang=\"ko\">\n\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>POSI DESIGN TEAM 주간업무보고</title>\n    <style>\n        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');\n\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        html,\n        body {\n            height: 100%;\n        }\n\n        body {\n            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;\n            background: #eef1f6;\n            padding: 12px;\n            font-size: 11.5px;\n            color: #222;\n            display: flex;\n            flex-direction: column;\n            min-height: 100vh;\n        }\n\n        .page-wrapper {\n            background: #fff;\n            border-radius: 10px;\n            box-shadow: 0 4px 24px rgba(0, 0, 0, .10);\n            overflow: hidden;\n            display: flex;\n            flex-direction: column;\n            flex: 1;\n        }\n\n        /* ── 툴바 ── */\n        .toolbar {\n            display: flex;\n            align-items: center;\n            gap: 7px;\n            padding: 9px 14px;\n            background: #fff;\n            border-bottom: 1px solid #dde2ea;\n            flex-shrink: 0;\n            flex-wrap: wrap;\n        }\n\n        .toolbar-title {\n            font-weight: 700;\n            font-size: 13px;\n            color: #1e3a5f;\n            flex: 1;\n            white-space: nowrap;\n        }\n\n        .edit-hint {\n            font-size: 10.5px;\n            color: #888;\n            background: #f5f7fa;\n            border-radius: 10px;\n            padding: 2px 9px;\n            white-space: nowrap;\n        }\n\n        .btn {\n            padding: 5px 13px;\n            border-radius: 6px;\n            border: none;\n            cursor: pointer;\n            font-size: 11px;\n            font-weight: 600;\n            font-family: inherit;\n        }\n\n        .btn-print {\n            background: #1e3a5f;\n            color: #fff;\n        }\n\n        .btn-print:hover {\n            background: #2d5f9e;\n        }\n\n\n        .btn-save {\n            background: #27ae60;\n            color: #fff;\n        }\n\n        .btn-save:hover {\n            background: #1e8449;\n        }\n\n        .btn-reset {\n            background: #fdecea;\n            color: #c0392b;\n            border: 1px solid #e74c3c;\n        }\n\n        .btn-reset:hover {\n            background: #fadbd8;\n        }\n\n        .btn-auto {\n            background: #e8f4fd;\n            color: #1a6bb5;\n            border: 1px solid #1a6bb5;\n        }\n\n        .btn-auto:hover {\n            background: #c8e4f8;\n        }\n\n        /* ── 제목 ── */\n        .report-title {\n            background: #1e3a5f;\n            color: #fff;\n            text-align: center;\n            padding: 9px 14px;\n            font-size: 13px;\n            font-weight: 700;\n            flex-shrink: 0;\n        }\n\n        .report-title .sub {\n            font-weight: 400;\n            font-size: 11.5px;\n            margin-left: 5px;\n            opacity: .85;\n        }\n\n        .week-badge {\n            display: inline-block;\n            background: rgba(255, 255, 255, .18);\n            border-radius: 14px;\n            padding: 2px 11px;\n            font-size: 10.5px;\n            font-weight: 600;\n            margin-left: 9px;\n            vertical-align: middle;\n        }\n\n        /* ── 테이블 스크롤 ── */\n        .table-scroll {\n            overflow-x: auto;\n            flex: 1;\n        }\n\n        /* ── 테이블 ── */\n        table {\n            width: max-content;\n            min-width: 100%;\n            border-collapse: collapse;\n            table-layout: auto;\n        }\n\n        th,\n        td {\n            border: 1px solid #c8cdd6;\n            text-align: center;\n            padding: 3px 5px;\n            vertical-align: middle;\n        }\n\n        /* 헤더 */\n        thead tr.week-label th {\n            font-size: 11px;\n            font-weight: 700;\n            padding: 5px 4px;\n            border-bottom: 2px solid #fff;\n        }\n\n        th.week1-lbl {\n            background: #1e3a5f;\n            color: #fff;\n        }\n\n        th.week2-lbl {\n            background: #3a6faa;\n            color: #fff;\n        }\n\n        th.col-fixed {\n            background: #1e3a5f;\n            color: transparent;\n            border-color: #1e3a5f;\n        }\n\n        thead tr.date-row th {\n            background: #2d5f9e;\n            color: #fff;\n            font-weight: 600;\n            font-size: 10.5px;\n            padding: 5px 3px;\n            white-space: nowrap;\n        }\n\n        thead tr.date-row th.col-dept {\n            background: #1e3a5f;\n        }\n\n        thead tr.date-row th.col-status {\n            background: #1e3a5f;\n        }\n\n        thead tr.date-row th.col-task {\n            background: #1e3a5f;\n            text-align: center;\n            padding-left: 5px;\n        }\n\n        thead tr.date-row th.col-owner {\n            background: #1e3a5f;\n            min-width: 60px;\n        }\n\n        thead tr.date-row th.col-del {\n            background: #1e3a5f;\n            width: 22px;\n        }\n\n        thead tr.date-row th.weekend {\n            background: #3f74b5;\n        }\n\n        thead tr.date-row th.w2-sep {\n            border-left: 1px solid #1e3a5f;\n        }\n\n        /* 데이터 셀 */\n        td.dept-cell {\n            font-weight: 700;\n            font-size: 11px;\n            white-space: nowrap;\n            min-width: 50px;\n        }\n\n        td.status-cell {\n            font-size: 10.5px;\n            font-weight: 600;\n            white-space: nowrap;\n            min-width: 44px;\n            cursor: pointer;\n        }\n\n        td.status-cell:hover {\n            opacity: .75;\n        }\n\n        .status-done {\n            color: #1a6bb5;\n        }\n\n        .status-ing {\n            color: #d45b00;\n        }\n\n        .status-plan {\n            color: #666;\n        }\n\n        td.task-cell {\n            text-align: center;\n            padding-left: 5px;\n            white-space: nowrap;\n            min-width: 80px;\n        }\n\n        td.owner-cell {\n            font-size: 10.5px;\n            white-space: nowrap;\n            min-width: 60px;\n        }\n\n        td.date-cell {\n            width: 32px;\n            min-width: 30px;\n            font-size: 13px;\n            cursor: pointer;\n            user-select: none;\n        }\n\n        td.date-cell:hover {\n            filter: brightness(.92);\n        }\n\n        td.date-cell.weekend {\n            background: #f0edff !important;\n        }\n\n        /* 오늘 날짜 셀 - 개별 박스 없애고 미세한 배경만 */\n        td.date-cell.today {\n            background: rgba(255, 107, 53, 0.07) !important;\n        }\n\n        thead th.today-th {\n            background: rgba(255, 107, 53, 0.45) !important;\n            color: #fff;\n        }\n\n        /* 오늘 열 오버레이 */\n        .today-col-overlay {\n            position: absolute;\n            border: 2.5px solid #ff6b35;\n            border-radius: 3px;\n            pointer-events: none;\n            z-index: 20;\n            box-shadow: 0 0 12px rgba(255, 107, 53, 0.22);\n            background: rgba(255, 107, 53, 0.03);\n        }\n\n        td.date-cell.w2-sep {\n            border-left: 1px solid #2d5f9e;\n        }\n\n        td.del-cell {\n            width: 22px;\n            min-width: 22px;\n        }\n\n        .btn-del-row {\n            background: none;\n            border: none;\n            color: #c0392b;\n            cursor: pointer;\n            font-size: 13px;\n            padding: 0 2px;\n            line-height: 1;\n        }\n\n        .btn-del-row:hover {\n            color: #e74c3c;\n        }\n\n        /* 편집 가능 셀 스타일 */\n        [contenteditable] {\n            outline: none;\n        }\n\n        [contenteditable]:hover {\n            background: rgba(45, 95, 158, .07) !important;\n            outline: 1px dashed #4a7fc0;\n            border-radius: 2px;\n            cursor: text;\n        }\n\n        [contenteditable]:focus {\n            background: rgba(45, 95, 158, .12) !important;\n            outline: 2px solid #4a7fc0;\n            border-radius: 2px;\n        }\n\n        /* 부서 배경 */\n        tr.dept-BAT td {\n            background: #e8f0fb;\n        }\n\n        tr.dept-PMI td {\n            background: #fde9e0;\n        }\n\n        tr.dept-KTG td {\n            background: #e5f5e0;\n        }\n\n        tr.dept-ELIZ td {\n            background: #f0e8f7;\n        }\n\n        tr.dept-UPLUS td {\n            background: #fffbe6;\n        }\n\n        tr.dept-BAT td.dept-cell {\n            background: #b8d0f5;\n            color: #1a3f80;\n        }\n\n        tr.dept-PMI td.dept-cell {\n            background: #f9c0a8;\n            color: #8a2a0a;\n        }\n\n        tr.dept-KTG td.dept-cell {\n            background: #a8d8a0;\n            color: #1a5010;\n        }\n\n        tr.dept-ELIZ td.dept-cell {\n            background: #d0b0eb;\n            color: #50168a;\n        }\n\n        tr.dept-UPLUS td.dept-cell {\n            background: #fce090;\n            color: #6a4a00;\n        }\n\n        tr.dept-BAT td.date-cell.weekend {\n            background: #d0e4f8 !important;\n        }\n\n        tr.dept-PMI td.date-cell.weekend {\n            background: #fbcab8 !important;\n        }\n\n        tr.dept-KTG td.date-cell.weekend {\n            background: #c8e8c0 !important;\n        }\n\n        tr.dept-ELIZ td.date-cell.weekend {\n            background: #dcc8f0 !important;\n        }\n\n        tr.dept-UPLUS td.date-cell.weekend {\n            background: #fce898 !important;\n        }\n\n        /* 행 추가 행 */\n        tr.add-row-tr td {\n            background: #f8f9fc !important;\n            padding: 2px;\n            border-top: 2px dashed #c8cdd6 !important;\n        }\n\n        tr.add-row-tr:last-child td {\n            border-bottom: 3px solid #1e3a5f;\n        }\n\n        .btn-add-row {\n            background: none;\n            border: 1px dashed #4a7fc0;\n            color: #4a7fc0;\n            border-radius: 4px;\n            padding: 2px 10px;\n            cursor: pointer;\n            font-size: 10.5px;\n            font-family: inherit;\n            font-weight: 600;\n        }\n\n        .btn-add-row:hover {\n            background: #e8f0fb;\n        }\n\n        /* 저장 알림 */\n        #saveMsg {\n            position: fixed;\n            bottom: 18px;\n            right: 22px;\n            background: #27ae60;\n            color: #fff;\n            padding: 7px 18px;\n            border-radius: 20px;\n            font-size: 11.5px;\n            font-weight: 600;\n            opacity: 0;\n            transition: opacity .3s;\n            pointer-events: none;\n            z-index: 999;\n        }\n\n        #saveMsg.show {\n            opacity: 1;\n        }\n\n        @media print {\n            body {\n                background: #fff;\n                padding: 4px;\n                font-size: 10px;\n            }\n\n            .toolbar {\n                display: none;\n            }\n\n            .page-wrapper {\n                box-shadow: none;\n                border-radius: 0;\n            }\n\n            .btn-del-row,\n            .btn-add-row {\n                display: none;\n            }\n        }\n    </style>\n</head>\n\n<body>\n    <div class=\"page-wrapper\">\n\n        <div class=\"toolbar\">\n            <div class=\"toolbar-title\">📋 POSI DESIGN TEAM — 디자인 연구소 주간업무보고</div>\n            <span class=\"edit-hint\">✏️ 셀 클릭 → 직접 편집 &nbsp;|&nbsp; 날짜 셀 클릭 → ● 토글 &nbsp;|&nbsp; 구분 클릭 → 상태 변경\n                &nbsp;|&nbsp; 🔄 업무내용 저장 시 날짜 자동 채우기</span>\n            <button class=\"btn btn-save\" onclick=\"saveNow()\">💾 저장</button>\n            <button class=\"btn btn-auto\" onclick=\"autoFillAllDates()\">🔄 날짜 자동 채우기</button>\n            <button class=\"btn btn-reset\" onclick=\"resetData()\">↺ 초기화</button>\n            <button class=\"btn btn-print\" onclick=\"window.print()\">🖨 인쇄</button>\n        </div>\n\n        <div class=\"report-title\" id=\"reportTitle\"></div>\n        <div class=\"table-scroll\">\n            <div id=\"tableWrap\"></div>\n        </div>\n    </div>\n\n    <div id=\"saveMsg\">✅ 저장되었습니다</div>\n\n    <script>\n        // ════════════════════════════════════════════\n        //  기본 데이터\n        // ════════════════════════════════════════════\n        const defaultGroups = [\n            {\n                dept: \"BAT\", cls: \"BAT\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"PMI\", cls: \"PMI\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"KT&G글로벌\", cls: \"KTG\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"엘리자베스아덴\", cls: \"ELIZ\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"U+\", cls: \"UPLUS\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n        ];\n\n        // 클래스 매핑 (dept 이름이 바뀌어도 색상 유지용)\n        const CLS_LIST = [\"BAT\", \"PMI\", \"KTG\", \"ELIZ\", \"UPLUS\"];\n\n        // ════════════════════════════════════════════\n        //  데이터 로드/저장\n        // ════════════════════════════════════════════\n        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }\n\n        let groups = (() => {\n            try {\n                const s = localStorage.getItem('weeklyReport');\n                return s ? JSON.parse(s) : deepClone(defaultGroups);\n            } catch (e) { return deepClone(defaultGroups); }\n        })();\n\n        function saveToStorage() {\n            localStorage.setItem('weeklyReport', JSON.stringify(groups));\n        }\n\n        function saveNow() {\n            saveToStorage();\n            const msg = document.getElementById('saveMsg');\n            msg.classList.add('show');\n            setTimeout(() => msg.classList.remove('show'), 1800);\n        }\n\n        function resetData() {\n            if (confirm('모든 내용을 초기 데이터로 되돌리겠습니까?\\n(저장된 내용이 삭제됩니다)')) {\n                localStorage.removeItem('weeklyReport');\n                groups = deepClone(defaultGroups);\n                render();\n            }\n        }\n\n        // ════════════════════════════════════════════\n        //  날짜 유틸\n        // ════════════════════════════════════════════\n        const DAY_KO = [\"월\", \"화\", \"수\", \"목\", \"금\", \"토\", \"일\"];\n        let baseMonday = getMonday(new Date());\n\n        function getMonday(d) {\n            const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;\n            const m = new Date(d); m.setDate(d.getDate() + diff); m.setHours(0, 0, 0, 0); return m;\n        }\n        function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }\n        function fmt(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }\n        function weekRange(m) { return `${fmt(m)}(월)~${fmt(addDays(m, 6))}(일)`; }\n\n\n        // ════════════════════════════════════════════\n        //  이벤트 핸들러\n        // ════════════════════════════════════════════\n        function toggleDate(gi, ri, week, day) {\n            const arr = week === 1 ? groups[gi].rows[ri].d1 : groups[gi].rows[ri].d2;\n            const idx = arr.indexOf(day);\n            if (idx >= 0) arr.splice(idx, 1); else arr.push(day);\n            saveToStorage();\n            renderOnly(); // 전체 재렌더 없이 ●만 업데이트\n        }\n\n        function cycleStatus(gi, ri) {\n            const s = ['완료', '진행중', '예정'];\n            const cur = groups[gi].rows[ri].status;\n            groups[gi].rows[ri].status = s[(s.indexOf(cur) + 1) % 3];\n            saveToStorage();\n            // 해당 셀만 업데이트\n            const el = document.getElementById(`st_${gi}_${ri}`);\n            if (el) {\n                const ns = groups[gi].rows[ri].status;\n                el.textContent = ns;\n                el.className = `status-cell ${ns === '완료' ? 'status-done' : ns === '진행중' ? 'status-ing' : 'status-plan'}`;\n            }\n        }\n\n        function updateTask(gi, ri, val) {\n            groups[gi].rows[ri].task = val;\n            autoFillRow(gi, ri); // 날짜 자동 파싱 후 적용\n        }\n\n        function updateOwner(gi, ri, val) {\n            // 같은 작성자 그룹(병합 블록) 전체 업데이트\n            const rows = groups[gi].rows;\n            // ri 기준으로 연속된 같은 값 블록의 시작 찾기\n            let start = ri;\n            while (start > 0 && (rows[start - 1].owner || \"\") === (rows[ri].owner || \"\")) start--;\n            let end = ri;\n            while (end < rows.length - 1 && (rows[end + 1].owner || \"\") === (rows[ri].owner || \"\")) end++;\n            for (let k = start; k <= end; k++) rows[k].owner = val;\n            saveToStorage();\n            render();\n        }\n\n        function updateDept(gi, val) {\n            groups[gi].dept = val;\n            saveToStorage();\n        }\n\n        function addRow(gi) {\n            groups[gi].rows.push({ status: '예정', owner: '', task: '새 업무 입력', d1: [], d2: [] });\n            saveToStorage();\n            render();\n        }\n\n        function deleteRow(gi, ri) {\n            if (groups[gi].rows.length <= 1) { alert('최소 1개 행은 유지해야 합니다.'); return; }\n            if (confirm(`\"${groups[gi].rows[ri].task}\" 행을 삭제하시겠습니까?`)) {\n                groups[gi].rows.splice(ri, 1);\n                saveToStorage();\n                render();\n            }\n        }\n\n        // ● 셀만 빠르게 업데이트 (전체 재렌더 없이)\n        function renderOnly() {\n            const today = new Date(); today.setHours(0, 0, 0, 0);\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2Mon = addDays(baseMonday, 7);\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));\n            groups.forEach((g, gi) => {\n                g.rows.forEach((row, ri) => {\n                    [1, 2].forEach(week => {\n                        const dates = week === 1 ? w1 : w2;\n                        dates.forEach((_, di) => {\n                            const el = document.getElementById(`dc_${gi}_${ri}_${week}_${di}`);\n                            if (el) {\n                                const arr = week === 1 ? row.d1 : row.d2;\n                                el.textContent = arr.includes(di) ? '●' : '';\n                            }\n                        });\n                    });\n                });\n            });\n            // 오늘 박스 재스케줄\n            setTimeout(drawTodayBox, 20);\n        }\n\n        // ════════════════════════════════════════════\n        //  전체 렌더링\n        // ════════════════════════════════════════════\n        function render() {\n            const today = new Date(); today.setHours(0, 0, 0, 0);\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2Mon = addDays(baseMonday, 7);\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));\n\n            // 제목\n            document.getElementById('reportTitle').innerHTML =\n                `POSI DESIGN TEAM <span class=\"sub\">— 디자인 연구소 주간업무보고</span>` +\n                `<span class=\"week-badge\">1주: ${weekRange(baseMonday)} &nbsp;|&nbsp; 2주: ${weekRange(w2Mon)}</span>`;\n\n            // ── 헤더 ──\n            let h = `<table><thead>\n    <tr class=\"week-label\">\n      <th class=\"col-fixed\" colspan=\"5\"></th>\n      <th class=\"week1-lbl\" colspan=\"7\">📅 1주차 (${weekRange(baseMonday)})</th>\n      <th class=\"week2-lbl\" colspan=\"7\">📅 2주차 (${weekRange(w2Mon)})</th>\n    </tr>\n    <tr class=\"date-row\">\n      <th class=\"col-del\"></th>\n      <th class=\"col-dept\">부서</th>\n      <th class=\"col-owner\">작성자</th>\n      <th class=\"col-status\">구분</th>\n      <th class=\"col-task\">업무내용</th>`;\n\n            w1.forEach((d, i) => {\n                const wk = i >= 5, isTd = d.getTime() === today.getTime();\n                h += `<th class=\"${wk ? 'weekend' : ''} ${isTd ? 'today-th' : ''}\">${fmt(d)}<br>(${DAY_KO[i]})</th>`;\n            });\n            w2.forEach((d, i) => {\n                const wk = i >= 5, isTd = d.getTime() === today.getTime();\n                h += `<th class=\"${wk ? 'weekend' : ''} ${i === 0 ? 'w2-sep' : ''} ${isTd ? 'today-th' : ''}\">${fmt(d)}<br>(${DAY_KO[i]})</th>`;\n            });\n            h += `</tr></thead><tbody>`;\n\n            // ── 데이터 행 ──\n            // 구분 순서: 완료 → 진행중 → 예정 순으로 정렬 (저장 데이터는 그대로 유지)\n            const STATUS_ORDER = { '완료': 0, '진행중': 1, '예정': 2, '': 3 };\n\n            // ── 렌더 전 날짜 자동 매칭 (task 힌트 → d1/d2) ──\n            const _w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const _w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));\n            groups.forEach(group => {\n                group.rows.forEach(row => {\n                    if (row.status === '완료') {\n                        // 완료 업무: task에 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                    } else {\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);\n                        } else if (row.status === '진행중') {\n                            // 날짜 힌트 없는 진행중 → 해당 주 평일 전체\n                            row.d1 = [0, 1, 2, 3, 4];\n                            row.d2 = [0, 1, 2, 3, 4];\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                    }\n                });\n            });\n\n            groups.forEach((group, gi) => {\n                group.rows.sort((a, b) =>\n                    (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)\n                );\n                const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;\n                const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';\n\n                // 작성자 rowspan 계산: 연속된 같은 작성자 그룹화\n                const ownerSpans = [];\n                let ownerIdx = 0;\n                while (ownerIdx < group.rows.length) {\n                    const ownerVal = group.rows[ownerIdx].owner || \"\";\n                    let span = 1;\n                    while (ownerIdx + span < group.rows.length &&\n                        (group.rows[ownerIdx + span].owner || \"\") === ownerVal) {\n                        span++;\n                    }\n                    for (let k = 0; k < span; k++) ownerSpans.push(k === 0 ? span : 0);\n                    ownerIdx += span;\n                }\n\n                group.rows.forEach((row, ri) => {\n                    h += `<tr class=\"${rowCls}\">`;\n\n                    // 삭제 버튼\n                    h += `<td class=\"del-cell\"><button class=\"btn-del-row\" onclick=\"deleteRow(${gi},${ri})\" title=\"행 삭제\">✕</button></td>`;\n\n                    // 부서 (rowspan + contenteditable)\n                    if (ri === 0) {\n                        h += `<td class=\"dept-cell\" rowspan=\"${group.rows.length}\"\n          contenteditable=\"true\"\n          onblur=\"updateDept(${gi},this.textContent.trim())\"\n          title=\"클릭하여 부서명 편집\">${group.dept}</td>`;\n                    }\n\n                    // 작성자 (연속 같은 값 rowspan 병합)\n                    if (ownerSpans[ri] > 0) {\n                        h += `<td class=\"owner-cell\" rowspan=\"${ownerSpans[ri]}\"\n        contenteditable=\"true\"\n        onblur=\"updateOwner(${gi},${ri},this.textContent.trim())\"\n        title=\"클릭하여 작성자 편집\">${row.owner || \"\"}</td>`;\n                    }\n\n                    // 구분 (클릭으로 순환)\n                    h += `<td id=\"st_${gi}_${ri}\" class=\"status-cell ${sCls(row.status)}\"\n        onclick=\"cycleStatus(${gi},${ri})\" title=\"클릭하여 상태 변경\">${row.status}</td>`;\n\n                    // 업무내용 (contenteditable)\n                    h += `<td class=\"task-cell\" contenteditable=\"true\"\n        onblur=\"updateTask(${gi},${ri},this.textContent.trim())\"\n        title=\"클릭하여 업무내용 편집\">${row.task}</td>`;\n\n                    // 1주차 날짜\n                    w1.forEach((d, di) => {\n                        const wk = di >= 5, td = d.getTime() === today.getTime();\n                        const on = row.d1.includes(di);\n                        h += `<td id=\"dc_${gi}_${ri}_1_${di}\"\n          class=\"date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}\"\n          onclick=\"toggleDate(${gi},${ri},1,${di})\"\n          title=\"${fmt(d)} 클릭하여 토글\">${on ? '●' : ''}</td>`;\n                    });\n\n                    // 2주차 날짜\n                    w2.forEach((d, di) => {\n                        const wk = di >= 5, td = d.getTime() === today.getTime();\n                        const on = row.d2.includes(di);\n                        h += `<td id=\"dc_${gi}_${ri}_2_${di}\"\n          class=\"date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}${di === 0 ? ' w2-sep' : ''}\"\n          onclick=\"toggleDate(${gi},${ri},2,${di})\"\n          title=\"${fmt(d)} 클릭하여 토글\">${on ? '●' : ''}</td>`;\n                    });\n\n                    h += `</tr>`;\n                });\n\n                // 행 추가 버튼\n                h += `<tr class=\"add-row-tr ${rowCls}\"><td colspan=\"19\">\n      <button class=\"btn-add-row\" onclick=\"addRow(${gi})\">+ ${group.dept} 행 추가</button>\n    </td></tr>`;\n            });\n\n            h += `</tbody></table>`;\n            document.getElementById('tableWrap').innerHTML = h;\n            setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 20);\n        }\n\n        // ════════════════════════════════════════════\n        //  날짜 자동 파싱 & 채우기\n        // ════════════════════════════════════════════\n\n        /**\n         * 업무 텍스트에서 날짜 범위를 파싱합니다.\n         * 지원 패턴:\n         *   (3/12)         → 단일 날짜\n         *   (~3/15)        → 해당 날까지\n         *   (3/12~3/15)    → 날짜 범위\n         *   (3월) / (4월 중) → 해당 월 전체\n         */\n        function parseTaskDates(task) {\n            const Y = new Date().getFullYear();\n\n            // (M/D~M/D) 범위\n            let m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\s*~\\s*(\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };\n\n            // (~M/D) 해당 날까지\n            m = task.match(/\\(~(\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) return { start: new Date(2000, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };\n\n            // (M/D 완료) 또는 (M/D완료)\n            m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\s*완료\\)/);\n            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }\n\n            // (M/D) 단일 날짜\n            m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }\n\n            // (M월 중순) / (M월 중) / (M월) 등\n            m = task.match(/\\((\\d{1,2})월(?:\\s*(?:초|중순|중|말))?\\)/);\n            if (m) {\n                const mo = +m[1] - 1;\n                return { start: new Date(Y, mo, 1), end: new Date(Y, mo + 1, 0) };\n            }\n\n            return null; // 날짜 없음\n        }\n\n        /**\n         * 주어진 날짜 범위에서 weekDates(7일) 중 해당하는 인덱스 반환\n         */\n        function getActiveIndices(start, end, weekDates) {\n            // 비교를 위해 시간 정규화\n            const s = new Date(start); s.setHours(0, 0, 0, 0);\n            const e = new Date(end); e.setHours(23, 59, 59, 0);\n            return weekDates.reduce((acc, d, i) => {\n                const dt = new Date(d); dt.setHours(12, 0, 0, 0);\n                if (dt >= s && dt <= e) acc.push(i);\n                return acc;\n            }, []);\n        }\n\n        /**\n         * 현재 표시 주차 계산\n         */\n        function getCurrentWeeks() {\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));\n            return { w1, w2 };\n        }\n\n        /**\n         * 단일 행 날짜 자동 채우기 (업무내용 변경 시 호출)\n         */\n        function autoFillRow(gi, ri) {\n            const row = groups[gi].rows[ri];\n            const { w1, w2 } = getCurrentWeeks();\n\n            if (row.status === '완료') {\n                // 완료 → 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸\n                const parsed = parseTaskDates(row.task);\n                if (parsed) {\n                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                } else {\n                    row.d1 = [];\n                    row.d2 = [];\n                }\n            } else {\n                const parsed = parseTaskDates(row.task);\n                if (parsed) {\n                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                } else if (row.status === '진행중') {\n                    // 날짜 명시 없는 진행중 → 평일 전체\n                    row.d1 = [0, 1, 2, 3, 4];\n                    row.d2 = [0, 1, 2, 3, 4];\n                }\n                // 날짜 없는 예정 → 변경 없음\n            }\n            saveToStorage();\n            renderOnly();\n        }\n\n        /**\n         * 전체 행 일괄 자동 채우기 버튼\n         */\n        function autoFillAllDates() {\n            const { w1, w2 } = getCurrentWeeks();\n            let count = 0;\n\n            groups.forEach(group => {\n                group.rows.forEach(row => {\n                    if (row.status === '완료') {\n                        // 완료 → 완료일이 있으면 해당 날짜에 ●\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                        count++;\n                    } else {\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                            count++;\n                        } else if (row.status === '진행중') {\n                            row.d1 = [0, 1, 2, 3, 4];\n                            row.d2 = [0, 1, 2, 3, 4];\n                            count++;\n                        }\n                        // 날짜 없는 예정 → 변경 없음\n                    }\n                });\n            });\n\n            saveToStorage();\n            renderOnly();\n\n            const msg = document.getElementById('saveMsg');\n            msg.textContent = `🔄 ${count}개 행 날짜 자동 채우기 완료!`;\n            msg.classList.add('show');\n            setTimeout(() => { msg.textContent = '✅ 저장되었습니다'; msg.classList.remove('show'); }, 2200);\n        }\n\n        // ════════════════════════════════════════════\n        //  오늘 열 하나의 큰 박스 오버레이\n        // ════════════════════════════════════════════\n        function drawTodayBox() {\n            // 기존 오버레이 제거\n            document.querySelectorAll('.today-col-overlay').forEach(el => el.remove());\n\n            const tableWrap = document.getElementById('tableWrap');\n            const scrollEl = document.querySelector('.table-scroll');\n            if (!tableWrap || !scrollEl) return;\n\n            tableWrap.style.position = 'relative';\n\n            // 날짜 엸 요소 가삸오기 (td.today + th.today-th)\n            const cells = tableWrap.querySelectorAll('.today, .today-th');\n            if (cells.length === 0) return;\n\n            const wrapRect = tableWrap.getBoundingClientRect();\n            const scrollLeft = scrollEl.scrollLeft;\n\n            // x좌표바로 그룹화 (같은 열)\n            const colMap = {};\n            cells.forEach(el => {\n                const r = el.getBoundingClientRect();\n                const xKey = Math.round(r.left);\n                if (!colMap[xKey]) colMap[xKey] = [];\n                colMap[xKey].push(r);\n            });\n\n            Object.values(colMap).forEach(rects => {\n                const table = tableWrap.querySelector('table');\n                const tableRect = table.getBoundingClientRect();\n\n                const top = Math.min(...rects.map(r => r.top)) - wrapRect.top;\n                // 테이블의 실제 바닥까지 박스를 확장\n                const bottom = tableRect.bottom - wrapRect.top;\n                const left = Math.min(...rects.map(r => r.left)) - wrapRect.left + scrollLeft;\n                const width = Math.max(...rects.map(r => r.width));\n\n                const box = document.createElement('div');\n                box.className = 'today-col-overlay';\n                box.style.top = `${top}px`;\n                box.style.left = `${left}px`;\n                box.style.width = `${width}px`;\n                box.style.height = `${bottom - top}px`;\n                tableWrap.appendChild(box);\n            });\n        }\n\n        // ════════════════════════════════════════════\n        //  1주/2주 경계 세로선 오버레이 (영역 끝까지)\n        // ════════════════════════════════════════════\n        function drawW2SepLine() {\n            document.querySelectorAll('.w2-sep-overlay').forEach(el => el.remove());\n\n            const tableWrap = document.getElementById('tableWrap');\n            const scrollEl = document.querySelector('.table-scroll');\n            if (!tableWrap || !scrollEl) return;\n\n            // w2-sep 클래스 셀 중 첫 번째 데이터 셀 기준으로 x 위치 파악\n            const sepCell = tableWrap.querySelector('td.w2-sep, th.w2-sep');\n            if (!sepCell) return;\n\n            const table = tableWrap.querySelector('table');\n            const wrapRect = tableWrap.getBoundingClientRect();\n            const tableRect = table.getBoundingClientRect();\n            const cellRect = sepCell.getBoundingClientRect();\n\n            const left = cellRect.left - wrapRect.left + scrollEl.scrollLeft - 1;\n            const top = 0;\n            const height = tableRect.bottom - wrapRect.top;\n\n            const line = document.createElement('div');\n            line.className = 'w2-sep-overlay';\n            line.style.cssText = `\n                position: absolute;\n                top: ${top}px;\n                left: ${left}px;\n                width: 1px;\n                height: ${height}px;\n                background: #2d5f9e;\n                pointer-events: none;\n                z-index: 10;\n            `;\n            tableWrap.appendChild(line);\n        }\n\n        // 스크롤·리사이즈 시 재계산\n        document.querySelector('.table-scroll').addEventListener('scroll', () => { drawTodayBox(); drawW2SepLine(); });\n        window.addEventListener('resize', () => { drawTodayBox(); drawW2SepLine(); });\n\n        render();\n        // 렌더링 후 DOM 반영 대기\n        setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 50);\n    <\\/script>\n</body>\n\n</html>";
 
 
 function getWeekInfo(date = getNow()) {
@@ -1048,21 +1029,13 @@ function openSettings() {
   document.getElementById('settingsModal').classList.add('open');
 }
 
-async function openPreview() {
-  try {
-    await ensureReportTemplateLoaded(true);
-  } catch (error) {
-    alert(`weekly-report.html 파일을 불러오지 못했습니다. ${error.message}`);
-    return;
-  }
-
+function openPreview() {
   const html = buildStandaloneReportHTML();
   updatedReportHTML = html;
   if (!html) {
-    alert('미리보기용 보고서를 생성하지 못했습니다.');
+    alert('미리볼 보고서가 없습니다. 먼저 팀 보고서를 제출하거나 취합해 주세요.');
     return;
   }
-
   document.getElementById('previewFrame').srcdoc = html;
   document.getElementById('previewModal').classList.add('open');
 }
@@ -1080,6 +1053,135 @@ function switchTab(tabId) {
   });
 }
 
+function cleanWriterName(value) {
+  return String(value || '')
+    .replace(/^(작성자|담당자|담당|리더|leader)\s*[:：-]?\s*/i, '')
+    .replace(/(팀장|매니저|manager|PM|PL|파트장)/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripPersonalLabel(text, names = []) {
+  let result = String(text || '').trim();
+  const filteredNames = names.map(cleanWriterName).filter(Boolean);
+
+  if (filteredNames.length) {
+    const joined = filteredNames.map(escapeRegExp).join('|');
+    result = result.replace(new RegExp(`^\s*(?:${joined})\s*[-–—:|/]\s*`, 'i'), '');
+    result = result.replace(new RegExp(`\s*[-–—:|/]\s*(?:${joined})(?:\s*(?:님|매니저|팀장|PM|PL))?\s*$`, 'i'), '');
+  }
+
+  return result
+    .replace(/^\s*[가-힣]{2,4}\s*[-–—:|/]\s*/, '')
+    .replace(/\s*[-–—:|/]\s*[가-힣]{2,4}\s*$/, '')
+    .trim();
+}
+
+function normalizeTaskForDisplay(task, owner = '', leader = '') {
+  return stripPersonalLabel(
+    String(task || '')
+      .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
+      .replace(/^(완료|진행중|예정)\s*/g, '')
+      .replace(/[•▪◦·]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+    [owner, leader]
+  );
+}
+
+function getReportWeeks() {
+  const monday = getWeekInfo().monday;
+  const w1 = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const w2 = Array.from({ length: 7 }, (_, i) => addDays(monday, i + 7));
+  return { w1, w2 };
+}
+
+function parseTaskDateRange(task) {
+  const source = String(task || '');
+  const Y = getWeekInfo().year || new Date().getFullYear();
+  let m = null;
+
+  m = source.match(/(\d{1,2})\/(\d{1,2})\s*[~-]\s*(\d{1,2})\/(\d{1,2})/);
+  if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };
+
+  m = source.match(/(\d{1,2})월\s*(\d{1,2})일\s*[~-]\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };
+
+  m = source.match(/~\s*(\d{1,2})\/(\d{1,2})/);
+  if (m) return { start: new Date(Y, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };
+
+  m = source.match(/~\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (m) return { start: new Date(Y, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };
+
+  m = source.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (m) {
+    const d = new Date(Y, +m[1] - 1, +m[2]);
+    return { start: d, end: d };
+  }
+
+  m = source.match(/(\d{1,2})\/(\d{1,2})/);
+  if (m) {
+    const d = new Date(Y, +m[1] - 1, +m[2]);
+    return { start: d, end: d };
+  }
+
+  m = source.match(/(\d{1,2})월\s*(초|중순|중|말)/);
+  if (m) {
+    const mo = +m[1] - 1;
+    if (m[2] === '초') return { start: new Date(Y, mo, 1), end: new Date(Y, mo, 10) };
+    if (m[2] === '말') return { start: new Date(Y, mo, 21), end: new Date(Y, mo + 1, 0) };
+    return { start: new Date(Y, mo, 11), end: new Date(Y, mo, 20) };
+  }
+
+  m = source.match(/\((\d{1,2})월(?:\s*(?:초|중순|중|말))?\)/);
+  if (m) {
+    const mo = +m[1] - 1;
+    return { start: new Date(Y, mo, 1), end: new Date(Y, mo + 1, 0) };
+  }
+
+  if (/이번주|금주/.test(source)) {
+    const { w1 } = getReportWeeks();
+    return { start: w1[0], end: w1[6] };
+  }
+
+  if (/다음주|차주/.test(source)) {
+    const { w2 } = getReportWeeks();
+    return { start: w2[0], end: w2[6] };
+  }
+
+  return null;
+}
+
+function getActiveIndicesForMain(start, end, weekDates) {
+  const s = new Date(start); s.setHours(0, 0, 0, 0);
+  const e = new Date(end); e.setHours(23, 59, 59, 999);
+  return weekDates.reduce((acc, d, i) => {
+    const dt = new Date(d); dt.setHours(12, 0, 0, 0);
+    if (dt >= s && dt <= e) acc.push(i);
+    return acc;
+  }, []);
+}
+
+function inferDateDots(task, status, d1 = [], d2 = []) {
+  const parsed = parseTaskDateRange(task);
+  if (!parsed) {
+    return {
+      d1: Array.isArray(d1) ? [...new Set(d1)].sort((a, b) => a - b) : [],
+      d2: Array.isArray(d2) ? [...new Set(d2)].sort((a, b) => a - b) : []
+    };
+  }
+
+  const { w1, w2 } = getReportWeeks();
+  return {
+    d1: getActiveIndicesForMain(parsed.start, parsed.end, w1),
+    d2: getActiveIndicesForMain(parsed.start, parsed.end, w2)
+  };
+}
+
 function normalizeRow(row, leader = '') {
   const statusRaw = String(row.status || '').trim();
   let status = '진행중';
@@ -1087,36 +1189,43 @@ function normalizeRow(row, leader = '') {
   else if (/예정|plan|todo/i.test(statusRaw)) status = '예정';
   else if (/진행|ing|progress/i.test(statusRaw)) status = '진행중';
 
+  const writer = cleanWriterName(leader || row.owner || '');
+  const task = normalizeTaskForDisplay(row.task, row.owner || '', leader || '');
+  const dots = inferDateDots(task, status, row.d1, row.d2);
+
   return {
     status,
-    task: String(row.task || '').trim(),
-    owner: String(row.owner || leader || '').trim(),
-    d1: Array.isArray(row.d1) ? row.d1 : [],
-    d2: Array.isArray(row.d2) ? row.d2 : []
+    task,
+    owner: writer,
+    d1: dots.d1,
+    d2: dots.d2
   };
 }
 
 function fallbackParseReport(text, defaultLeader = '') {
-  return text
-    .split(/\n+/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      let status = '진행중';
-      if (/^\[?완료\]?/.test(line) || /완료/.test(line)) status = '완료';
-      else if (/^\[?예정\]?/.test(line) || /예정/.test(line)) status = '예정';
-      else if (/^\[?진행중\]?/.test(line) || /진행/.test(line)) status = '진행중';
+  return dedupeRows(
+    text
+      .split(/\n+/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        let status = '진행중';
+        if (/^\[?완료\]?/.test(line) || /완료/.test(line)) status = '완료';
+        else if (/^\[?예정\]?/.test(line) || /예정/.test(line)) status = '예정';
+        else if (/^\[?진행중\]?/.test(line) || /진행/.test(line)) status = '진행중';
 
-      const ownerMatch = line.match(/[-–—]\s*([^\-–—\[\]()]+)$/);
-      const owner = ownerMatch ? ownerMatch[1].trim() : defaultLeader;
-      const task = line
-        .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
-        .replace(/^(완료|진행중|예정)\s*/g, '')
-        .replace(/[-–—]\s*([^\-–—\[\]()]+)$/g, '')
-        .trim();
-      return normalizeRow({ status, task, owner }, defaultLeader);
-    })
-    .filter(row => row.task);
+        const ownerMatch = line.match(/[-–—]\s*([^\-–—\[\]()]+)$/);
+        const owner = ownerMatch ? ownerMatch[1].trim() : defaultLeader;
+        const task = line
+          .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
+          .replace(/^(완료|진행중|예정)\s*/g, '')
+          .replace(/[-–—]\s*([^\-–—\[\]()]+)$/g, '')
+          .trim();
+        return normalizeRow({ status, task, owner }, defaultLeader);
+      })
+      .filter(row => row.task),
+    defaultLeader
+  );
 }
 
 async function callGemini(prompt) {
@@ -1156,20 +1265,57 @@ function extractFirstJsonBlock(text) {
 }
 
 async function callGeminiParseReport(text, team, leader = '') {
-  const prompt = `당신은 주간업무보고서를 구조화하는 도우미입니다.\n\n팀명: ${team}\n입력 텍스트:\n"""\n${text}\n"""\n\n반드시 JSON 배열만 출력하세요. 각 항목 스키마는 아래와 같습니다.\n[\n  {\n    "status": "완료 또는 진행중 또는 예정",\n    "task": "업무 내용",\n    "owner": "담당자 이름, 없으면 빈 문자열",\n    "d1": [],\n    "d2": []\n  }\n]\n\n규칙:\n- 날짜 힌트가 있으면 task에 유지\n- status는 세 가지 중 하나만 사용\n- 설명 문장 없이 JSON만 출력`;
+  const { w1, w2 } = getReportWeeks();
+  const formatWeek = (arr) => arr.map((d, idx) => `${idx}:${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`).join(', ');
+  const prompt = `당신은 주간업무보고서를 구조화하는 도우미입니다.
+
+팀명: ${team}
+작성자: ${cleanWriterName(leader)}
+입력 텍스트:
+"""
+${text}
+"""
+
+출력은 반드시 JSON 배열만 하세요. 각 항목 스키마는 아래와 같습니다.
+[
+  {
+    "status": "완료 또는 진행중 또는 예정",
+    "task": "중복 제거된 대표 업무명",
+    "owner": "반드시 빈 문자열 또는 작성자 이름만",
+    "d1": [0],
+    "d2": [0]
+  }
+]
+
+날짜 인덱스 기준:
+- d1은 이번 주(월~일): ${formatWeek(w1)}
+- d2는 다음 주(월~일): ${formatWeek(w2)}
+
+규칙:
+- 작성자란에는 작성자 이름만 사용하고, 담당자 개인 이름은 task에 넣지 말 것
+- 사람별로 같은 업무가 반복되면 하나의 대표 업무로 합칠 것
+- 담당자별 세부 업무가 아니라 팀 기준 업무만 남길 것
+- 업무 문장 안에 날짜가 있으면 해당 날짜 인덱스를 d1 또는 d2에 채울 것
+- 날짜를 판단할 수 없으면 d1, d2는 빈 배열로 둘 것
+- status는 세 가지 중 하나만 사용
+- 설명 문장 없이 JSON만 출력`;
 
   const raw = await callGemini(prompt);
   const jsonText = extractFirstJsonBlock(raw);
   const parsed = JSON.parse(jsonText);
   if (!Array.isArray(parsed)) throw new Error('Gemini 응답이 배열이 아닙니다.');
-  const rows = parsed.map(row => normalizeRow(row, leader)).filter(row => row.task);
+  const rows = dedupeRows(parsed.map(row => normalizeRow(row, leader)).filter(row => row.task), leader);
   if (!rows.length) throw new Error('파싱된 업무가 없습니다.');
   return rows;
 }
 
 
 function normalizeTaskText(task) {
-  return String(task || '')
+  return normalizeTaskForDisplay(task)
+    .replace(/\(\s*~?\s*\d{1,2}\/\d{1,2}(?:\s*[~-]\s*\d{1,2}\/\d{1,2})?(?:\s*완료)?\s*\)/g, '')
+    .replace(/\(\s*\d{1,2}월(?:\s*\d{1,2}일)?(?:\s*(?:초|중순|중|말))?\s*\)/g, '')
+    .replace(/\d{1,2}월\s*\d{1,2}일/g, '')
+    .replace(/\d{1,2}\/\d{1,2}/g, '')
     .replace(/\s+/g, ' ')
     .replace(/[\[\]\(\){}.,/#!$%^&*;:{}=\_`~?<>|+-]/g, '')
     .trim()
@@ -1183,16 +1329,16 @@ function statusRank(status) {
   return 0;
 }
 
-function dedupeRows(rows) {
+function dedupeRows(rows, leader = '') {
   const map = new Map();
   (rows || []).forEach(raw => {
-    const row = {
+    const row = normalizeRow({
       status: raw?.status || '',
       task: raw?.task || '',
       owner: raw?.owner || '',
       d1: Array.isArray(raw?.d1) ? [...new Set(raw.d1)] : [],
       d2: Array.isArray(raw?.d2) ? [...new Set(raw.d2)] : []
-    };
+    }, leader);
     const key = normalizeTaskText(row.task);
     if (!key) return;
     if (!map.has(key)) {
@@ -1203,12 +1349,12 @@ function dedupeRows(rows) {
     const merged = {
       ...prev,
       status: statusRank(row.status) > statusRank(prev.status) ? row.status : prev.status,
-      owner: prev.owner || row.owner,
+      owner: cleanWriterName(prev.owner || row.owner || leader),
       d1: [...new Set([...(prev.d1 || []), ...(row.d1 || [])])].sort((a,b)=>a-b),
       d2: [...new Set([...(prev.d2 || []), ...(row.d2 || [])])].sort((a,b)=>a-b)
     };
     if ((row.task || '').length > (prev.task || '').length) merged.task = row.task;
-    map.set(key, merged);
+    map.set(key, normalizeRow(merged, leader));
   });
   return Array.from(map.values());
 }
@@ -1218,7 +1364,8 @@ function getDedupedReports() {
   Object.entries(reports || {}).forEach(([team, report]) => {
     result[team] = {
       ...report,
-      rows: dedupeRows(report?.rows || [])
+      leader: cleanWriterName(report?.leader || ''),
+      rows: dedupeRows(report?.rows || [], report?.leader || '')
     };
   });
   return result;
@@ -1282,7 +1429,7 @@ function updateParsedPreview(rows) {
   const previewWrap = document.getElementById('parsedPreview');
   const preview = document.getElementById('parsedContent');
   previewWrap.style.display = '';
-  preview.textContent = rows.map(row => `[${row.status}] ${row.task} — ${row.owner || '미지정'}`).join('\n');
+  preview.textContent = rows.map(row => `[${row.status}] ${row.task}${row.d1.length || row.d2.length ? ` (● ${[...row.d1.map(i => `W1-${i + 1}`), ...row.d2.map(i => `W2-${i + 1}`)].join(', ')})` : ''}`).join('\n');
 }
 
 async function parseTextReport() {
@@ -1380,7 +1527,7 @@ async function submitReport() {
   };
   reports[team] = report;
 
-  addMsg(team, 'assistant', `✅ 보고서 접수 완료\n\n${rows.map(row => `• [${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n')}`, '🤖 AI', '#2d5f9e', 'ai-result');
+  addMsg(team, 'assistant', `✅ 보고서 접수 완료\n\n작성자: ${cleanWriterName(leader)}\n${rows.map(row => `• [${row.status}] ${row.task}`).join('\n')}`, '🤖 AI', '#2d5f9e', 'ai-result');
   addSystemMsg('collect', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
 
   const saved = await fbSaveReport(team, report);
@@ -1484,8 +1631,7 @@ async function fbLoadStatus() {
 
   const collected = await fbLoadCollected();
   if (collected?.summary) collectedSummary = collected.summary;
-  try { await ensureReportTemplateLoaded(); } catch (error) { console.warn(error); }
-  updatedReportHTML = buildStandaloneReportHTML();
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
 
   renderSidebar();
   renderRightPanel();
@@ -1503,8 +1649,8 @@ async function loadReportsOnStart() {
   reports = { ...loadedReports };
   const collected = await fbLoadCollected();
   if (collected?.summary) collectedSummary = collected.summary;
-  try { await ensureReportTemplateLoaded(); } catch (error) { console.warn(error); }
-  updatedReportHTML = buildStandaloneReportHTML();
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
+  else updatedReportHTML = buildStandaloneReportHTML();
   renderSidebar();
   renderRightPanel();
 }
@@ -1545,7 +1691,6 @@ async function runCollectAll() {
   const loadingId = addLoadingMsg();
 
   try {
-    await ensureReportTemplateLoaded(true);
     collectedSummary = await callGeminiCollectSummary();
   } catch (error) {
     console.warn(error);
@@ -1604,15 +1749,19 @@ function buildWeeklyTemplateGroups() {
   const dedupedReports = getDedupedReports();
   return settings.teams.map((team, index) => {
     const report = dedupedReports[team];
+    const writer = cleanWriterName(report?.leader || '');
     const rows = (report && Array.isArray(report.rows) && report.rows.length)
-      ? report.rows.map(row => ({
-          status: row.status || '',
-          owner: row.owner || report.leader || '',
-          task: row.task || '',
-          d1: Array.isArray(row.d1) ? row.d1 : [],
-          d2: Array.isArray(row.d2) ? row.d2 : []
-        }))
-      : [{ status: '', owner: '', task: '', d1: [], d2: [] }];
+      ? dedupeRows(report.rows, writer).map(row => {
+          const normalized = normalizeRow({ ...row, owner: writer }, writer);
+          return {
+            status: normalized.status || '',
+            owner: writer,
+            task: normalized.task || '',
+            d1: Array.isArray(normalized.d1) ? normalized.d1 : [],
+            d2: Array.isArray(normalized.d2) ? normalized.d2 : []
+          };
+        })
+      : [{ status: '', owner: writer, task: '', d1: [], d2: [] }];
 
     return {
       dept: team,
@@ -1622,23 +1771,56 @@ function buildWeeklyTemplateGroups() {
   });
 }
 
-function buildStandaloneReportHTML() {
-  const template = REPORT_TEMPLATE;
-  if (!template) return '';
+function buildWeeklySummaryBlock() {
+  const summaryObj = collectedSummary || buildFallbackSummary();
+  const stats = summaryObj.stats || computeStats();
+  const overview = (summaryObj.overview || []).slice(0, 4).map(line => `<li>${escapeHtml(line)}</li>`).join('') || '<li>요약 없음</li>';
+  const issues = (summaryObj.issues || []).slice(0, 3).map(line => `<li>${escapeHtml(line)}</li>`).join('') || '<li>특이 이슈 없음</li>';
 
+  return `
+  <div style="padding:12px 14px;border-bottom:1px solid #dde2ea;background:#f6f8fc;">
+    <div style="display:grid;grid-template-columns:1.6fr repeat(4,minmax(90px,1fr));gap:10px;align-items:stretch;">
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:6px;">AI 취합 요약</div>
+        <div style="font-size:11px;color:#5b6577;margin-bottom:8px;">${escapeHtml(getCurrentWeekLabel())}</div>
+        <ul style="margin:0;padding-left:18px;font-size:11px;line-height:1.65;color:#222;">${overview}</ul>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #dde2ea;font-size:10.5px;color:#8a5a00;">${issues}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">완료</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.completed}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">진행중</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.inProgress}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">예정</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.planned}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">총 업무</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.total}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildStandaloneReportHTML() {
   const monday = getWeekInfo().monday;
   const storageKey = `weeklyReport_${getCurrentWeekKey()}`;
-  let html = template;
+  let html = WEEKLY_REPORT_TEMPLATE;
 
   const groupsJson = JSON.stringify(buildWeeklyTemplateGroups(), null, 2);
 
-  html = html.replace(/const defaultGroups = \[[\s\S]*?\];/, `const defaultGroups = ${groupsJson};`);
-  html = html.replace(/let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/, 'let groups = deepClone(defaultGroups);');
+  html = html.replace(new RegExp("const defaultGroups = \\[\\s\\S]*?\\n        \\];"), `const defaultGroups = ${groupsJson};`);
+  html = html.replace(new RegExp("let groups = \\(\\(\\) => \\{[\\s\\S]*?\\}\\)\\(\\);"), `let groups = deepClone(defaultGroups);`);
   html = html.replace(/localStorage\.getItem\('weeklyReport'\)/g, `localStorage.getItem('${storageKey}')`);
   html = html.replace(/localStorage\.setItem\('weeklyReport', JSON\.stringify\(groups\)\);/g, `localStorage.setItem('${storageKey}', JSON.stringify(groups));`);
   html = html.replace(/localStorage\.removeItem\('weeklyReport'\);/g, `localStorage.removeItem('${storageKey}');`);
   html = html.replace(/let baseMonday = getMonday\(new Date\(\)\);/, `let baseMonday = new Date(${monday.getFullYear()}, ${monday.getMonth()}, ${monday.getDate()});`);
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>POSI DESIGN TEAM 주간업무보고 - ${escapeHtml(getCurrentWeekLabel())}</title>`);
+  html = html.replace(/<div class="report-title" id="reportTitle"><\/div>/, `<div class="report-title" id="reportTitle"></div>${buildWeeklySummaryBlock()}`);
 
   return html;
 }
