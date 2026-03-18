@@ -1189,14 +1189,14 @@ function normalizeRow(row, leader = '') {
   else if (/예정|plan|todo/i.test(statusRaw)) status = '예정';
   else if (/진행|ing|progress/i.test(statusRaw)) status = '진행중';
 
-  const writer = cleanWriterName(leader || row.owner || '');
+  const writer = cleanWriterName(leader || '');
   const task = normalizeTaskForDisplay(row.task, row.owner || '', leader || '');
   const dots = inferDateDots(task, status, row.d1, row.d2);
 
   return {
     status,
     task,
-    owner: writer,
+    owner: '',
     d1: dots.d1,
     d2: dots.d2
   };
@@ -1215,7 +1215,7 @@ function fallbackParseReport(text, defaultLeader = '') {
         else if (/^\[?진행중\]?/.test(line) || /진행/.test(line)) status = '진행중';
 
         const ownerMatch = line.match(/[-–—]\s*([^\-–—\[\]()]+)$/);
-        const owner = ownerMatch ? ownerMatch[1].trim() : defaultLeader;
+        const owner = '';
         const task = line
           .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
           .replace(/^(완료|진행중|예정)\s*/g, '')
@@ -1281,7 +1281,7 @@ ${text}
   {
     "status": "완료 또는 진행중 또는 예정",
     "task": "중복 제거된 대표 업무명",
-    "owner": "반드시 빈 문자열 또는 작성자 이름만",
+    "owner": "반드시 빈 문자열",
     "d1": [0],
     "d2": [0]
   }
@@ -1294,7 +1294,7 @@ ${text}
 규칙:
 - 작성자란에는 작성자 이름만 사용하고, 담당자 개인 이름은 task에 넣지 말 것
 - 사람별로 같은 업무가 반복되면 하나의 대표 업무로 합칠 것
-- 담당자별 세부 업무가 아니라 팀 기준 업무만 남길 것
+- 담당자별 현황은 만들지 말고 팀 기준 업무만 남길 것
 - 업무 문장 안에 날짜가 있으면 해당 날짜 인덱스를 d1 또는 d2에 채울 것
 - 날짜를 판단할 수 없으면 d1, d2는 빈 배열로 둘 것
 - status는 세 가지 중 하나만 사용
@@ -1476,7 +1476,6 @@ function renderRowList() {
         <option ${row.status === '예정' ? 'selected' : ''}>예정</option>
       </select>
       <input type="text" class="form-input" style="flex:1;padding:5px 8px;font-size:11.5px;" placeholder="업무내용" value="${escapeHtml(row.task)}" oninput="parsedRows[${index}].task=this.value">
-      <input type="text" class="form-input" style="width:90px;padding:5px 8px;font-size:11px;" placeholder="담당자" value="${escapeHtml(row.owner)}" oninput="parsedRows[${index}].owner=this.value">
       <button class="row-del-btn" onclick="deleteRowItem(${index})">✕</button>
     </div>
   `).join('');
@@ -1512,7 +1511,7 @@ async function submitReport() {
   } else {
     rows = parsedRows.map(row => normalizeRow(row, leader)).filter(row => row.task);
     if (!rows.length) return alert('업무 행을 1개 이상 입력해 주세요.');
-    rawText = rows.map(row => `[${row.status}] ${row.task} - ${row.owner || leader}`).join('\n');
+    rawText = rows.map(row => `[${row.status}] ${row.task}`).join('\n');
     closeModal('submitModal');
     addMsg(team, 'user', `[구조화 보고서 제출]\n${rawText}`, leader, roomColor(team), 'report-paste');
   }
@@ -1755,13 +1754,13 @@ function buildWeeklyTemplateGroups() {
           const normalized = normalizeRow({ ...row, owner: writer }, writer);
           return {
             status: normalized.status || '',
-            owner: writer,
+            owner: '',
             task: normalized.task || '',
             d1: Array.isArray(normalized.d1) ? normalized.d1 : [],
             d2: Array.isArray(normalized.d2) ? normalized.d2 : []
           };
         })
-      : [{ status: '', owner: writer, task: '', d1: [], d2: [] }];
+      : [{ status: '', owner: '', task: '', d1: [], d2: [] }];
 
     return {
       dept: team,
@@ -1901,7 +1900,7 @@ function renderRightPanel() {
             ${escapeHtml(team)} — ${escapeHtml(report.leader || '-')}
             <span class="tag tag-done">${report.rows?.length || 0}건</span>
           </div>
-          <div class="report-card-body">${escapeHtml((report.rows || []).map(row => `[${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n'))}</div>
+          <div class="report-card-body">${escapeHtml((report.rows || []).map(row => `[${row.status}] ${row.task}`).join('\n'))}</div>
         </div>
       `;
     });
