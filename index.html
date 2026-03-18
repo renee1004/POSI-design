@@ -683,7 +683,7 @@ body {
       </div>
       <div class="form-group">
         <label class="form-label">Firebase Database URL</label>
-        <input type="text" class="form-input" id="fbUrlInput" placeholder="https://프로젝트명-default-rtdb.asia-southeast1.firebasedatabase.app">
+        <input type="text" class="form-input" id="fbUrlInput" placeholder="https://프로젝트명-default-rtdb.asia-southeast1.firebasedatabase.app" oninput="autoSaveFbUrl(this.value)">
       </div>
       <div class="form-group">
         <label class="form-label">팀 목록 (쉼표로 구분)</label>
@@ -691,7 +691,7 @@ body {
       </div>
       <div class="form-group">
         <label class="form-label">보고 주차 (자동 계산)</label>
-        <input type="text" class="form-input" id="weekLabel" placeholder="예: 2025년 12주차 (자동)">
+        <input type="text" class="form-input" id="weekLabel" placeholder="예: 2025년 12주차 (자동)" oninput="autoSaveWeekLabel(this.value)">
       </div>
     </div>
     <div class="modal-footer">
@@ -1030,7 +1030,8 @@ function openSettings() {
 }
 
 function openPreview() {
-  const html = updatedReportHTML || buildStandaloneReportHTML();
+  const html = buildStandaloneReportHTML();
+  updatedReportHTML = html;
   if (!html) {
     alert('미리볼 보고서가 없습니다. 먼저 팀 보고서를 제출하거나 취합해 주세요.');
     return;
@@ -1139,8 +1140,66 @@ async function callGeminiParseReport(text, team, leader = '') {
   return rows;
 }
 
+
+function normalizeTaskText(task) {
+  return String(task || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[\[\]\(\){}.,/#!$%^&*;:{}=\_`~?<>|+-]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function statusRank(status) {
+  if (status === '완료') return 3;
+  if (status === '진행중') return 2;
+  if (status === '예정') return 1;
+  return 0;
+}
+
+function dedupeRows(rows) {
+  const map = new Map();
+  (rows || []).forEach(raw => {
+    const row = {
+      status: raw?.status || '',
+      task: raw?.task || '',
+      owner: raw?.owner || '',
+      d1: Array.isArray(raw?.d1) ? [...new Set(raw.d1)] : [],
+      d2: Array.isArray(raw?.d2) ? [...new Set(raw.d2)] : []
+    };
+    const key = normalizeTaskText(row.task);
+    if (!key) return;
+    if (!map.has(key)) {
+      map.set(key, row);
+      return;
+    }
+    const prev = map.get(key);
+    const merged = {
+      ...prev,
+      status: statusRank(row.status) > statusRank(prev.status) ? row.status : prev.status,
+      owner: prev.owner || row.owner,
+      d1: [...new Set([...(prev.d1 || []), ...(row.d1 || [])])].sort((a,b)=>a-b),
+      d2: [...new Set([...(prev.d2 || []), ...(row.d2 || [])])].sort((a,b)=>a-b)
+    };
+    if ((row.task || '').length > (prev.task || '').length) merged.task = row.task;
+    map.set(key, merged);
+  });
+  return Array.from(map.values());
+}
+
+function getDedupedReports() {
+  const result = {};
+  Object.entries(reports || {}).forEach(([team, report]) => {
+    result[team] = {
+      ...report,
+      rows: dedupeRows(report?.rows || [])
+    };
+  });
+  return result;
+}
+
 async function callGeminiCollectSummary() {
-  const payload = Object.entries(reports).map(([team, report]) => ({
+  const dedupedReports = getDedupedReports();
+  const payload = Object.entries(dedupedReports).map(([team, report]) => ({
     team,
     leader: report.leader,
     rows: report.rows
@@ -1161,7 +1220,7 @@ async function callGeminiCollectSummary() {
 
 function computeStats() {
   const stats = { completed: 0, inProgress: 0, planned: 0, total: 0 };
-  Object.values(reports).forEach(report => {
+  Object.values(getDedupedReports()).forEach(report => {
     (report.rows || []).forEach(row => {
       stats.total += 1;
       if (row.status === '완료') stats.completed += 1;
@@ -1174,12 +1233,13 @@ function computeStats() {
 
 function buildFallbackSummary() {
   const stats = computeStats();
+  const dedupedReports = getDedupedReports();
   return {
     overview: [
-      `총 ${Object.keys(reports).length}개 팀의 보고서를 기준으로 주간 보고서를 취합했습니다.`,
-      `전체 업무 ${stats.total}건 중 완료 ${stats.completed}건, 진행중 ${stats.inProgress}건, 예정 ${stats.planned}건입니다.`
+      `총 ${Object.keys(dedupedReports).length}개 팀의 보고서를 기준으로 주간 보고서를 취합했습니다.`,
+      `중복 업무를 제거한 기준으로 전체 업무 ${stats.total}건 중 완료 ${stats.completed}건, 진행중 ${stats.inProgress}건, 예정 ${stats.planned}건입니다.`
     ],
-    teamHighlights: Object.entries(reports).map(([team, report]) => {
+    teamHighlights: Object.entries(dedupedReports).map(([team, report]) => {
       const topRows = (report.rows || []).slice(0, 2).map(row => `[${row.status}] ${row.task}`).join(' / ');
       return {
         team,
@@ -1375,6 +1435,7 @@ async function fbSaveCollected(summaryObj, reportHtml) {
     weekLabel: getCurrentWeekLabel(),
     summary: summaryObj,
     html: reportHtml,
+    templateVersion: 'weekly-report-v2',
     updatedAt: new Date().toISOString()
   });
 }
@@ -1396,7 +1457,7 @@ async function fbLoadStatus() {
 
   const collected = await fbLoadCollected();
   if (collected?.summary) collectedSummary = collected.summary;
-  if (collected?.html) updatedReportHTML = collected.html;
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
 
   renderSidebar();
   renderRightPanel();
@@ -1414,7 +1475,8 @@ async function loadReportsOnStart() {
   reports = { ...loadedReports };
   const collected = await fbLoadCollected();
   if (collected?.summary) collectedSummary = collected.summary;
-  if (collected?.html) updatedReportHTML = collected.html;
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
+  else updatedReportHTML = buildStandaloneReportHTML();
   renderSidebar();
   renderRightPanel();
 }
@@ -1510,8 +1572,9 @@ function getWeeklyTemplateClass(team, index = 0) {
 }
 
 function buildWeeklyTemplateGroups() {
+  const dedupedReports = getDedupedReports();
   return settings.teams.map((team, index) => {
-    const report = reports[team];
+    const report = dedupedReports[team];
     const rows = (report && Array.isArray(report.rows) && report.rows.length)
       ? report.rows.map(row => ({
           status: row.status || '',
@@ -1586,7 +1649,8 @@ function buildStandaloneReportHTML() {
 
 
 function downloadReport() {
-  const html = updatedReportHTML || buildStandaloneReportHTML();
+  const html = buildStandaloneReportHTML();
+  updatedReportHTML = html;
   if (!html) {
     alert('다운로드할 보고서가 없습니다.');
     return;
