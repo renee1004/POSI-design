@@ -720,21 +720,29 @@ body {
 
 <div id="toast">✅ 완료</div>
 
+
 <script>
 // ═══════════════════════════════════════
-//  STATE
+//  POSI DESIGN — 실행 가능한 단일 HTML 버전
 // ═══════════════════════════════════════
-let settings = {
-  apiKey: 'YOUR_GEMINI_API_KEY_HERE',       // ← Gemini API 키
-  fbUrl: 'YOUR_FIREBASE_DATABASE_URL_HERE', // ← Firebase Realtime DB URL (https://xxx.firebaseio.com)
-  teams: ['BAT','PMI','KT&G글로벌','엘리자베스아덴','U+']
-};
-let currentRoom = 'collect';
-let messages = {}; // roomId → [{role,content,time,name,avatar}]
-let reports = {};  // teamName → {leader, rows: [{status,task,owner,d1,d2}], rawText, time}
-let parsedRows = []; // 구조화 입력용
 
-// 팀 색상 맵
+const STORAGE_KEY = 'posiHubSettingsV2';
+const MESSAGE_LIMIT = 120;
+
+let settings = {
+  apiKey: '',
+  fbUrl: '',
+  teams: ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'],
+  weekLabel: ''
+};
+
+let currentRoom = 'collect';
+let messages = {};
+let reports = {};
+let parsedRows = [];
+let collectedSummary = null;
+let updatedReportHTML = '';
+
 const TEAM_COLORS = {
   'BAT': '#1e3a5f',
   'PMI': '#c0392b',
@@ -743,43 +751,612 @@ const TEAM_COLORS = {
   'U+': '#d4a800',
   'collect': '#2d5f9e'
 };
+
 const TEAM_ABBR = {
-  'BAT':'BAT','PMI':'PMI','KT&G글로벌':'KTG','엘리자베스아덴':'ELZ','U+':'U+','collect':'🤖'
+  'BAT': 'BAT',
+  'PMI': 'PMI',
+  'KT&G글로벌': 'KTG',
+  '엘리자베스아덴': 'ELZ',
+  'U+': 'U+',
+  'collect': '🤖'
 };
 
+function getNow() {
+  return new Date();
+}
 
-// ═══════════════════════════════════════
-//  Firebase Realtime DB — 보고서 저장/불러오기
-// ═══════════════════════════════════════
+function formatTime(dt = getNow()) {
+  return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
 
-function fbTeamKey(team) {
-  return team.replace(/[^a-zA-Z0-9가-힣]/g, '_');
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nl2br(value) {
+  return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+function getWeekInfo(date = getNow()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const monday = new Date(date);
+  const localDay = monday.getDay() || 7;
+  monday.setDate(monday.getDate() - (localDay - 1));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const label = `${d.getUTCFullYear()}년 ${weekNo}주차 (${String(monday.getMonth() + 1).padStart(2, '0')}.${String(monday.getDate()).padStart(2, '0')}~${String(sunday.getMonth() + 1).padStart(2, '0')}.${String(sunday.getDate()).padStart(2, '0')})`;
+  const key = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  return { label, key, weekNo, year: d.getUTCFullYear(), monday, sunday };
+}
+
+function getCurrentWeekLabel() {
+  return settings.weekLabel || getWeekInfo().label;
+}
+
+function getCurrentWeekKey() {
+  return (settings.weekLabel && settings.weekLabel.trim())
+    ? settings.weekLabel.trim().replace(/\s+/g, '-').replace(/[^0-9A-Za-z가-힣_.~-]/g, '_')
+    : getWeekInfo().key;
+}
+
+function normalizeFbUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
 }
 
 function fbReady() {
-  return settings.fbUrl && settings.fbUrl !== 'YOUR_FIREBASE_DATABASE_URL_HERE';
+  return /^https:\/\//i.test(normalizeFbUrl(settings.fbUrl));
 }
 
-async function fbSaveReport(team, data) {
-  if (!fbReady()) { console.warn('Firebase URL 미설정'); return false; }
-  const key = fbTeamKey(team);
-  const url = `${settings.fbUrl}/reports/${key}.json`;
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+function fbTeamKey(team) {
+  return String(team || '').trim().replace(/[^0-9A-Za-z가-힣_-]/g, '_');
+}
+
+function capMessages(roomId) {
+  if (messages[roomId] && messages[roomId].length > MESSAGE_LIMIT) {
+    messages[roomId] = messages[roomId].slice(-MESSAGE_LIMIT);
+  }
+}
+
+function addMsg(roomId, role, content, name = 'SYSTEM', avatarColor = '#888', bubbleClass = '') {
+  if (!messages[roomId]) messages[roomId] = [];
+  messages[roomId].push({
+    role,
+    content,
+    time: formatTime(),
+    name,
+    avatarColor,
+    bubbleClass
   });
-  return res.ok;
+  capMessages(roomId);
+  if (currentRoom === roomId) renderMessages();
+}
+
+function addSystemMsg(roomId, content) {
+  addMsg(roomId, 'system', content, 'SYSTEM', '#888', 'system');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      settings = { ...settings, ...saved };
+    }
+  } catch (error) {
+    console.warn('settings load failed', error);
+  }
+
+  if (!settings.weekLabel) settings.weekLabel = getWeekInfo().label;
+  if (!Array.isArray(settings.teams) || !settings.teams.length) {
+    settings.teams = ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'];
+  }
+  settings.fbUrl = normalizeFbUrl(settings.fbUrl);
+
+  const apiEl = document.getElementById('apiKeyInput');
+  const fbEl = document.getElementById('fbUrlInput');
+  const teamsEl = document.getElementById('teamsInput');
+  const weekEl = document.getElementById('weekLabel');
+  if (apiEl) apiEl.value = settings.apiKey || '';
+  if (fbEl) fbEl.value = settings.fbUrl || '';
+  if (teamsEl) teamsEl.value = settings.teams.join(',');
+  if (weekEl) weekEl.value = settings.weekLabel || getWeekInfo().label;
+}
+
+function persistSettings() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function autoSaveApiKey(val) {
+  settings.apiKey = String(val || '').trim();
+  persistSettings();
+}
+
+function saveSettings() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const fbUrl = normalizeFbUrl(document.getElementById('fbUrlInput').value);
+  const teams = document.getElementById('teamsInput').value
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+  const weekLabelInput = document.getElementById('weekLabel').value.trim();
+
+  settings.apiKey = apiKey;
+  settings.fbUrl = fbUrl;
+  settings.teams = teams.length ? teams : ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'];
+  settings.weekLabel = weekLabelInput || getWeekInfo().label;
+
+  persistSettings();
+  initRooms();
+  closeModal('settingsModal');
+  toast('✅ 설정이 저장되었습니다');
+  loadReportsOnStart();
+}
+
+function initRooms() {
+  settings.teams.forEach(team => {
+    if (!messages[team]) messages[team] = [];
+  });
+  if (!messages.collect) messages.collect = [];
+
+  ['submitTeam', 'submitTeam2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<option value="">팀을 선택하세요</option>';
+    settings.teams.forEach(team => {
+      const option = document.createElement('option');
+      option.value = team;
+      option.textContent = team;
+      el.appendChild(option);
+    });
+  });
+
+  renderSidebar();
+}
+
+function roomColor(roomId) {
+  return TEAM_COLORS[roomId] || '#4b5563';
+}
+
+function roomAbbr(roomId) {
+  return TEAM_ABBR[roomId] || String(roomId || '?').slice(0, 3).toUpperCase();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = settings.teams.map(team => {
+    const report = reports[team];
+    const hasReport = !!report;
+    const roomMsgs = messages[team] || [];
+    const last = roomMsgs.length ? roomMsgs[roomMsgs.length - 1].content : '보고서 대기중';
+    return `
+      <div class="room-item ${hasReport ? 'done' : ''} ${currentRoom === team ? 'active' : ''}" onclick="switchRoom('${escapeHtml(team)}')">
+        <div class="room-avatar" style="background:${roomColor(team)}">${escapeHtml(roomAbbr(team))}</div>
+        <div class="room-info">
+          <div class="room-name">${escapeHtml(team)} 팀</div>
+          <div class="room-last">${escapeHtml(String(last).replace(/\n/g, ' ').slice(0, 40))}</div>
+        </div>
+        ${hasReport ? '<span class="room-badge done">✓</span>' : '<span class="room-badge">대기</span>'}
+      </div>
+    `;
+  }).join('');
+}
+
+function switchRoom(roomId) {
+  currentRoom = roomId;
+  const isCollect = roomId === 'collect';
+  document.getElementById('chatAvatar').style.background = roomColor(roomId);
+  document.getElementById('chatAvatar').textContent = roomAbbr(roomId);
+  document.getElementById('chatName').textContent = isCollect ? 'AI 취합방' : `${roomId} 팀 보고방`;
+  document.getElementById('chatSub').textContent = isCollect
+    ? `전체 취합 · 주차 ${getCurrentWeekLabel()}`
+    : `${roomId} 팀 보고서 제출 및 확인`;
+  renderSidebar();
+  renderMessages();
+}
+
+function renderMessages() {
+  const el = document.getElementById('messages');
+  const roomMsgs = messages[currentRoom] || [];
+  el.innerHTML = roomMsgs.map(msg => {
+    if (msg.role === 'system') {
+      return `
+        <div style="display:flex;justify-content:center;">
+          <div class="msg-bubble system" style="max-width:80%;text-align:left;">${nl2br(msg.content)}</div>
+        </div>
+      `;
+    }
+    const self = msg.role === 'user';
+    return `
+      <div class="msg-wrap ${self ? 'self' : ''}">
+        <div class="msg-avatar" style="background:${msg.avatarColor}">${escapeHtml((msg.name || '?').slice(0, 1))}</div>
+        <div class="msg-content">
+          <div class="msg-name">${escapeHtml(msg.name)} · ${escapeHtml(msg.time)}</div>
+          <div class="msg-bubble ${msg.bubbleClass || ''}">${nl2br(msg.content)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const value = input.value.trim();
+  if (!value) return;
+  input.value = '';
+  addMsg(currentRoom, 'user', value, '나', '#1e3a5f');
+  setTimeout(() => {
+    addMsg(currentRoom, 'assistant', '📌 보고서 제출은 [보고서 제출] 버튼을 사용하세요. 자유 형식으로 입력하면 Gemini가 업무 행으로 정리합니다.', '🤖 AI', '#2d5f9e', 'ai-result');
+  }, 300);
+}
+
+document.getElementById('chatInput').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+function openSubmitModal() {
+  document.getElementById('submitModal').classList.add('open');
+}
+
+function openSettings() {
+  document.getElementById('apiKeyInput').value = settings.apiKey || '';
+  document.getElementById('fbUrlInput').value = settings.fbUrl || '';
+  document.getElementById('teamsInput').value = settings.teams.join(',');
+  document.getElementById('weekLabel').value = settings.weekLabel || getWeekInfo().label;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function openPreview() {
+  const html = updatedReportHTML || buildStandaloneReportHTML();
+  if (!html) {
+    alert('미리볼 보고서가 없습니다. 먼저 팀 보고서를 제출하거나 취합해 주세요.');
+    return;
+  }
+  document.getElementById('previewFrame').srcdoc = html;
+  document.getElementById('previewModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function switchTab(tabId) {
+  ['tabText', 'tabStructured'].forEach(id => {
+    document.getElementById(id).style.display = (id === tabId) ? '' : 'none';
+  });
+  ['tabTextBtn', 'tabStructuredBtn'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === `${tabId}Btn`);
+  });
+}
+
+function normalizeRow(row, leader = '') {
+  const statusRaw = String(row.status || '').trim();
+  let status = '진행중';
+  if (/완|done/i.test(statusRaw)) status = '완료';
+  else if (/예정|plan|todo/i.test(statusRaw)) status = '예정';
+  else if (/진행|ing|progress/i.test(statusRaw)) status = '진행중';
+
+  return {
+    status,
+    task: String(row.task || '').trim(),
+    owner: String(row.owner || leader || '').trim(),
+    d1: Array.isArray(row.d1) ? row.d1 : [],
+    d2: Array.isArray(row.d2) ? row.d2 : []
+  };
+}
+
+function fallbackParseReport(text, defaultLeader = '') {
+  return text
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      let status = '진행중';
+      if (/^\[?완료\]?/.test(line) || /완료/.test(line)) status = '완료';
+      else if (/^\[?예정\]?/.test(line) || /예정/.test(line)) status = '예정';
+      else if (/^\[?진행중\]?/.test(line) || /진행/.test(line)) status = '진행중';
+
+      const ownerMatch = line.match(/[-–—]\s*([^\-–—\[\]()]+)$/);
+      const owner = ownerMatch ? ownerMatch[1].trim() : defaultLeader;
+      const task = line
+        .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
+        .replace(/^(완료|진행중|예정)\s*/g, '')
+        .replace(/[-–—]\s*([^\-–—\[\]()]+)$/g, '')
+        .trim();
+      return normalizeRow({ status, task, owner }, defaultLeader);
+    })
+    .filter(row => row.task);
+}
+
+async function callGemini(prompt) {
+  if (!settings.apiKey) {
+    throw new Error('Gemini API 키가 설정되지 않았습니다. 설정에서 API 키를 먼저 입력해 주세요.');
+  }
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(settings.apiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: 'text/plain'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(`Gemini 호출 실패 (${response.status}) ${errText.slice(0, 180)}`);
+  }
+
+  const data = await response.json();
+  return data?.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('')?.trim() || '';
+}
+
+function extractFirstJsonBlock(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) return arrayMatch[0];
+  const objectMatch = text.match(/\{[\s\S]*\}/);
+  if (objectMatch) return objectMatch[0];
+  return text.trim();
+}
+
+async function callGeminiParseReport(text, team, leader = '') {
+  const prompt = `당신은 주간업무보고서를 구조화하는 도우미입니다.\n\n팀명: ${team}\n입력 텍스트:\n"""\n${text}\n"""\n\n반드시 JSON 배열만 출력하세요. 각 항목 스키마는 아래와 같습니다.\n[\n  {\n    "status": "완료 또는 진행중 또는 예정",\n    "task": "업무 내용",\n    "owner": "담당자 이름, 없으면 빈 문자열",\n    "d1": [],\n    "d2": []\n  }\n]\n\n규칙:\n- 날짜 힌트가 있으면 task에 유지\n- status는 세 가지 중 하나만 사용\n- 설명 문장 없이 JSON만 출력`;
+
+  const raw = await callGemini(prompt);
+  const jsonText = extractFirstJsonBlock(raw);
+  const parsed = JSON.parse(jsonText);
+  if (!Array.isArray(parsed)) throw new Error('Gemini 응답이 배열이 아닙니다.');
+  const rows = parsed.map(row => normalizeRow(row, leader)).filter(row => row.task);
+  if (!rows.length) throw new Error('파싱된 업무가 없습니다.');
+  return rows;
+}
+
+async function callGeminiCollectSummary() {
+  const payload = Object.entries(reports).map(([team, report]) => ({
+    team,
+    leader: report.leader,
+    rows: report.rows
+  }));
+
+  const prompt = `당신은 여러 팀의 주간업무보고를 취합하는 PM 보조입니다.\n다음 JSON 데이터를 읽고 전체 보고용 JSON만 출력하세요.\n\n${JSON.stringify(payload, null, 2)}\n\n반드시 아래 스키마의 JSON 객체만 응답하세요.\n{\n  "overview": ["문장1", "문장2"],\n  "teamHighlights": [\n    {"team":"BAT","summary":"핵심 내용 1~2문장"}\n  ],\n  "issues": ["없으면 빈 배열"],\n  "stats": {"completed": 0, "inProgress": 0, "planned": 0, "total": 0}\n}`;
+
+  const raw = await callGemini(prompt);
+  const jsonText = extractFirstJsonBlock(raw);
+  const parsed = JSON.parse(jsonText);
+  return {
+    overview: Array.isArray(parsed.overview) ? parsed.overview : [],
+    teamHighlights: Array.isArray(parsed.teamHighlights) ? parsed.teamHighlights : [],
+    issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+    stats: parsed.stats || computeStats()
+  };
+}
+
+function computeStats() {
+  const stats = { completed: 0, inProgress: 0, planned: 0, total: 0 };
+  Object.values(reports).forEach(report => {
+    (report.rows || []).forEach(row => {
+      stats.total += 1;
+      if (row.status === '완료') stats.completed += 1;
+      else if (row.status === '예정') stats.planned += 1;
+      else stats.inProgress += 1;
+    });
+  });
+  return stats;
+}
+
+function buildFallbackSummary() {
+  const stats = computeStats();
+  return {
+    overview: [
+      `총 ${Object.keys(reports).length}개 팀의 보고서를 기준으로 주간 보고서를 취합했습니다.`,
+      `전체 업무 ${stats.total}건 중 완료 ${stats.completed}건, 진행중 ${stats.inProgress}건, 예정 ${stats.planned}건입니다.`
+    ],
+    teamHighlights: Object.entries(reports).map(([team, report]) => {
+      const topRows = (report.rows || []).slice(0, 2).map(row => `[${row.status}] ${row.task}`).join(' / ');
+      return {
+        team,
+        summary: topRows || '제출된 업무가 없습니다.'
+      };
+    }),
+    issues: [],
+    stats
+  };
+}
+
+function updateParsedPreview(rows) {
+  const previewWrap = document.getElementById('parsedPreview');
+  const preview = document.getElementById('parsedContent');
+  previewWrap.style.display = '';
+  preview.textContent = rows.map(row => `[${row.status}] ${row.task} — ${row.owner || '미지정'}`).join('\n');
+}
+
+async function parseTextReport() {
+  const team = document.getElementById('submitTeam').value;
+  const leader = document.getElementById('submitLeader').value.trim();
+  const content = document.getElementById('submitContent').value.trim();
+  if (!team) return alert('팀을 선택해 주세요.');
+  if (!content) return alert('보고 내용을 입력해 주세요.');
+
+  document.getElementById('parsedPreview').style.display = '';
+  document.getElementById('parsedContent').textContent = '⏳ Gemini가 파싱 중입니다...';
+
+  try {
+    const rows = await callGeminiParseReport(content, team, leader);
+    updateParsedPreview(rows);
+  } catch (error) {
+    const fallback = fallbackParseReport(content, leader);
+    if (fallback.length) {
+      updateParsedPreview(fallback);
+      document.getElementById('parsedContent').textContent += '\n\n※ Gemini 파싱 실패로 기본 규칙 파서를 사용했습니다.';
+    } else {
+      document.getElementById('parsedContent').textContent = `❌ 파싱 오류: ${error.message}`;
+    }
+  }
+}
+
+function addRowItem() {
+  parsedRows.push({ status: '진행중', task: '', owner: '' });
+  renderRowList();
+}
+
+function deleteRowItem(index) {
+  parsedRows.splice(index, 1);
+  renderRowList();
+}
+
+function renderRowList() {
+  const el = document.getElementById('rowList');
+  el.innerHTML = parsedRows.map((row, index) => `
+    <div class="row-item">
+      <select class="form-select" style="width:90px;padding:4px 6px;font-size:11px;" onchange="parsedRows[${index}].status=this.value">
+        <option ${row.status === '완료' ? 'selected' : ''}>완료</option>
+        <option ${row.status === '진행중' ? 'selected' : ''}>진행중</option>
+        <option ${row.status === '예정' ? 'selected' : ''}>예정</option>
+      </select>
+      <input type="text" class="form-input" style="flex:1;padding:5px 8px;font-size:11.5px;" placeholder="업무내용" value="${escapeHtml(row.task)}" oninput="parsedRows[${index}].task=this.value">
+      <input type="text" class="form-input" style="width:90px;padding:5px 8px;font-size:11px;" placeholder="담당자" value="${escapeHtml(row.owner)}" oninput="parsedRows[${index}].owner=this.value">
+      <button class="row-del-btn" onclick="deleteRowItem(${index})">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitReport() {
+  const isTextTab = document.getElementById('tabText').style.display !== 'none';
+  const team = document.getElementById(isTextTab ? 'submitTeam' : 'submitTeam2').value;
+  const leader = document.getElementById('submitLeader').value.trim() || '팀장';
+  if (!team) return alert('팀을 선택해 주세요.');
+
+  let rows = [];
+  let rawText = '';
+
+  if (isTextTab) {
+    rawText = document.getElementById('submitContent').value.trim();
+    if (!rawText) return alert('보고 내용을 입력해 주세요.');
+
+    closeModal('submitModal');
+    addMsg(team, 'user', `[주간보고서 제출]\n${rawText}`, leader, roomColor(team), 'report-paste');
+    addSystemMsg(team, '⏳ Gemini로 보고서를 구조화하는 중입니다...');
+
+    try {
+      rows = await callGeminiParseReport(rawText, team, leader);
+    } catch (error) {
+      rows = fallbackParseReport(rawText, leader);
+      if (!rows.length) {
+        addSystemMsg(team, `❌ 파싱 실패: ${error.message}`);
+        return;
+      }
+      addSystemMsg(team, '⚠️ Gemini 파싱에 실패하여 기본 규칙 파서를 사용했습니다.');
+    }
+  } else {
+    rows = parsedRows.map(row => normalizeRow(row, leader)).filter(row => row.task);
+    if (!rows.length) return alert('업무 행을 1개 이상 입력해 주세요.');
+    rawText = rows.map(row => `[${row.status}] ${row.task} - ${row.owner || leader}`).join('\n');
+    closeModal('submitModal');
+    addMsg(team, 'user', `[구조화 보고서 제출]\n${rawText}`, leader, roomColor(team), 'report-paste');
+  }
+
+  const report = {
+    team,
+    leader,
+    rawText,
+    rows,
+    updatedAt: new Date().toISOString(),
+    weekLabel: getCurrentWeekLabel()
+  };
+  reports[team] = report;
+
+  addMsg(team, 'assistant', `✅ 보고서 접수 완료\n\n${rows.map(row => `• [${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n')}`, '🤖 AI', '#2d5f9e', 'ai-result');
+  addSystemMsg('collect', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
+
+  const saved = await fbSaveReport(team, report);
+  if (saved) addSystemMsg(team, '💾 Firebase 저장 완료 — 다른 팀원도 최신 보고서를 불러올 수 있습니다.');
+  else if (settings.fbUrl) addSystemMsg(team, '⚠️ Firebase 저장 실패 — DB URL 또는 보안 규칙을 확인해 주세요.');
+
+  parsedRows = [];
+  renderRowList();
+  renderSidebar();
+  renderRightPanel();
+  clearSubmitForm();
+  toast(`✅ ${team} 팀 보고서 제출 완료`);
+}
+
+function clearSubmitForm() {
+  document.getElementById('submitContent').value = '';
+  document.getElementById('parsedPreview').style.display = 'none';
+  document.getElementById('parsedContent').textContent = '';
+  document.getElementById('submitLeader').value = '';
+  document.getElementById('submitTeam').value = '';
+  document.getElementById('submitTeam2').value = '';
+}
+
+function fbPath(path) {
+  return `${normalizeFbUrl(settings.fbUrl)}${path}.json`;
+}
+
+async function fbPut(path, data) {
+  if (!fbReady()) return false;
+  try {
+    const response = await fetch(fbPath(path), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('fbPut failed', error);
+    return false;
+  }
+}
+
+async function fbGet(path) {
+  if (!fbReady()) return null;
+  try {
+    const response = await fetch(fbPath(path));
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.warn('fbGet failed', error);
+    return null;
+  }
+}
+
+async function fbSaveReport(team, report) {
+  if (!fbReady()) return false;
+  const weekKey = getCurrentWeekKey();
+  const teamKey = fbTeamKey(team);
+  return await fbPut(`/reports/${weekKey}/${teamKey}`, report);
 }
 
 async function fbLoadAllReports() {
   if (!fbReady()) return {};
-  const url = `${settings.fbUrl}/reports.json`;
-  const res = await fetch(url);
-  if (!res.ok) return {};
-  const data = await res.json();
-  if (!data) return {};
-  // Firebase key(_) → 팀명 복원
+  const weekKey = getCurrentWeekKey();
+  const data = await fbGet(`/reports/${weekKey}`);
+  if (!data || typeof data !== 'object') return {};
   const result = {};
   settings.teams.forEach(team => {
     const key = fbTeamKey(team);
@@ -788,558 +1365,370 @@ async function fbLoadAllReports() {
   return result;
 }
 
+async function fbSaveCollected(summaryObj, reportHtml) {
+  if (!fbReady()) return false;
+  const weekKey = getCurrentWeekKey();
+  return await fbPut(`/collected/${weekKey}`, {
+    weekLabel: getCurrentWeekLabel(),
+    summary: summaryObj,
+    html: reportHtml,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function fbLoadCollected() {
+  if (!fbReady()) return null;
+  return await fbGet(`/collected/${getCurrentWeekKey()}`);
+}
+
 async function fbLoadStatus() {
   if (!fbReady()) {
-    addMsg('collect', 'system', '⚠️ Firebase URL이 설정되지 않았습니다.');
+    addSystemMsg('collect', '⚠️ Firebase Database URL이 설정되지 않았습니다.');
     return;
   }
-  addMsg('collect', 'system', '🔄 Firebase에서 최신 보고서 현황 로드 중...');
-  const loaded = await fbLoadAllReports();
-  let count = 0;
-  Object.entries(loaded).forEach(([team, data]) => {
-    if (data && data.rows) { reports[team] = data; count++; }
-  });
-  if (count > 0) {
-    addMsg('collect', 'system', `✅ ${count}개 팀 보고서 로드 완료`);
-    renderSidebar();
-    renderRightPanel();
-  } else {
-    addMsg('collect', 'system', '📭 아직 제출된 보고서가 없습니다.');
-  }
+
+  addSystemMsg('collect', '🔄 Firebase에서 현재 주차 보고서를 불러오는 중입니다...');
+  const loadedReports = await fbLoadAllReports();
+  reports = { ...reports, ...loadedReports };
+
+  const collected = await fbLoadCollected();
+  if (collected?.summary) collectedSummary = collected.summary;
+  if (collected?.html) updatedReportHTML = collected.html;
+
+  renderSidebar();
+  renderRightPanel();
+  addSystemMsg('collect', `✅ ${Object.keys(loadedReports).length}개 팀 보고서를 로드했습니다.`);
 }
 
-// 페이지 로드 시 Firebase에서 자동으로 현황 로드
 async function loadReportsOnStart() {
-  if (!fbReady()) return;
-  const loaded = await fbLoadAllReports();
-  let count = 0;
-  Object.entries(loaded).forEach(([team, data]) => {
-    if (data && data.rows) { reports[team] = data; count++; }
-  });
-  if (count > 0) { renderSidebar(); renderRightPanel(); }
-}
-
-// ═══════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════
-function init() {
-  loadSettings();
-  initRooms();
-  switchRoom('collect');
-  renderRightPanel();
-  loadReportsOnStart(); // Firebase에서 기존 보고서 자동 로드
-  addSystemMsg('collect', `👋 안녕하세요! POSI DESIGN 주간업무보고 AI 취합 허브입니다.\n\n📌 사용 방법:\n1. 각 팀장이 팀 방에 접속하여 [보고서 제출] 클릭\n2. 자유 형식으로 보고 내용 입력 (AI가 자동 파싱)\n3. 모든 팀 보고서 수신 후 [전체 취합 & 보고서 업데이트] 클릭\n4. AI가 취합·정리하여 주간업무보고 HTML 자동 업데이트\n\n📌 각 팀장이 보고서 제출 시 GitHub에 자동 저장\n담당자가 취합 클릭 시 GitHub에서 자동 수집`);
-}
-
-function autoSaveApiKey(val) {
-  // 입력 즉시 localStorage에 저장 (저장 버튼 불필요)
-  settings.apiKey = val.trim();
-  try { localStorage.setItem('hubSettings', JSON.stringify(settings)); } catch(e) {}
-}
-
-function loadSettings() {
-  try {
-    const s = localStorage.getItem('hubSettings');
-    if (s) settings = { ...settings, ...JSON.parse(s) };
-    document.getElementById('apiKeyInput').value = settings.apiKey || '';
-    const fbEl = document.getElementById('fbUrlInput'); if(fbEl) fbEl.value = settings.fbUrl || '';
-    document.getElementById('teamsInput').value = settings.teams.join(',');
-  } catch(e){}
-}
-
-function saveSettings() {
-  // 하드코딩 키가 있으면 유지, 없을 때만 입력값 사용
-  const inputKey = document.getElementById('apiKeyInput').value.trim();
-  if (inputKey) settings.apiKey = inputKey;
-  const fbUrl = document.getElementById('fbUrlInput').value.trim();
-  if (fbUrl) settings.fbUrl = fbUrl;
-  const teamsRaw = document.getElementById('teamsInput').value;
-  settings.teams = teamsRaw.split(',').map(t => t.trim()).filter(Boolean);
-  localStorage.setItem('hubSettings', JSON.stringify(settings));
-  initRooms();
-  closeModal('settingsModal');
-  toast('✅ 설정이 저장되었습니다');
-}
-
-function initRooms() {
-  settings.teams.forEach(t => {
-    if (!messages[t]) messages[t] = [];
-  });
-  if (!messages['collect']) messages['collect'] = [];
-
-  // 팀 셀렉트 채우기
-  ['submitTeam','submitTeam2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.innerHTML = '<option value="">팀을 선택하세요</option>';
-      settings.teams.forEach(t => {
-        const o = document.createElement('option'); o.value = t; o.textContent = t;
-        el.appendChild(o);
-      });
-    }
-  });
-  renderSidebar();
-}
-
-// ═══════════════════════════════════════
-//  SIDEBAR
-// ═══════════════════════════════════════
-function renderSidebar() {
-  const list = document.getElementById('roomList');
-  list.innerHTML = settings.teams.map(t => {
-    const rep = reports[t];
-    const hasReport = !!rep;
-    const color = TEAM_COLORS[t] || '#666';
-    const abbr = TEAM_ABBR[t] || t.substring(0,3);
-    const lastMsg = messages[t] && messages[t].length > 0 ? messages[t][messages[t].length-1].content.substring(0,28)+'...' : '보고서 대기중';
-    return `
-      <div class="room-item ${hasReport ? 'done' : ''} ${currentRoom===t ? 'active' : ''}" onclick="switchRoom('${t}')">
-        <div class="room-avatar" style="background:${color}">${abbr}</div>
-        <div class="room-info">
-          <div class="room-name">${t} 팀</div>
-          <div class="room-last">${lastMsg}</div>
-        </div>
-        ${hasReport ? '<span class="room-badge done">✓</span>' : '<span class="room-badge">대기</span>'}
-      </div>
-    `;
-  }).join('');
-}
-
-// ═══════════════════════════════════════
-//  ROOM SWITCH
-// ═══════════════════════════════════════
-function switchRoom(roomId) {
-  currentRoom = roomId;
-  const isCollect = roomId === 'collect';
-  const color = TEAM_COLORS[roomId] || '#1e3a5f';
-  const abbr = TEAM_ABBR[roomId] || roomId.substring(0,3);
-
-  document.getElementById('chatAvatar').style.background = color;
-  document.getElementById('chatAvatar').textContent = abbr;
-
-  if (isCollect) {
-    document.getElementById('chatName').textContent = 'AI 취합방';
-    document.getElementById('chatSub').textContent = '전체 취합 & 주간업무보고 자동 업데이트';
-  } else {
-    document.getElementById('chatName').textContent = `${roomId} 팀 보고방`;
-    document.getElementById('chatSub').textContent = `${roomId} 팀장이 주간보고서를 제출하는 방`;
-  }
-
-  renderSidebar();
-  renderMessages();
-}
-
-// ═══════════════════════════════════════
-//  MESSAGES
-// ═══════════════════════════════════════
-function addMsg(roomId, role, content, name, avatarColor, bubbleClass='') {
-  if (!messages[roomId]) messages[roomId] = [];
-  const now = new Date();
-  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  messages[roomId].push({ role, content, time, name, avatarColor, bubbleClass });
-  if (currentRoom === roomId) renderMessages();
-}
-
-function addSystemMsg(roomId, content) {
-  addMsg(roomId, 'system', content, 'SYSTEM', '#888', 'system');
-}
-
-function renderMessages() {
-  const el = document.getElementById('messages');
-  const msgs = messages[currentRoom] || [];
-  el.innerHTML = msgs.map(m => {
-    if (m.role === 'system') {
-      return `<div style="display:flex;justify-content:center;">
-        <div class="msg-bubble system" style="max-width:80%;text-align:left;">${m.content}</div>
-      </div>`;
-    }
-    const isSelf = m.role === 'user';
-    return `
-      <div class="msg-wrap ${isSelf ? 'self' : ''}">
-        <div class="msg-avatar" style="background:${m.avatarColor}">${m.name ? m.name[0] : '?'}</div>
-        <div class="msg-content">
-          <div class="msg-name">${m.name} · ${m.time}</div>
-          <div class="msg-bubble ${m.bubbleClass || ''}">${m.content}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-  el.scrollTop = el.scrollHeight;
-}
-
-// ═══════════════════════════════════════
-//  CHAT INPUT
-// ═══════════════════════════════════════
-document.getElementById('chatInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
-
-function sendMessage() {
-  const inp = document.getElementById('chatInput');
-  const val = inp.value.trim();
-  if (!val) return;
-  inp.value = '';
-  addMsg(currentRoom, 'user', val, '나', '#1e3a5f');
-  // 간단한 응답
-  setTimeout(() => {
-    addMsg(currentRoom, 'assistant', '📌 보고서 제출은 [보고서 제출] 버튼을 이용해 주세요. 자유 형식으로 입력하면 AI가 자동으로 파싱합니다.', '🤖 AI', '#2d5f9e', 'ai-result');
-  }, 600);
-}
-
-// ═══════════════════════════════════════
-//  보고서 제출 (AI 파싱)
-// ═══════════════════════════════════════
-function openSubmitModal() {
-  document.getElementById('submitModal').classList.add('open');
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-function switchTab(tabId) {
-  ['tabText','tabStructured'].forEach(id => {
-    document.getElementById(id).style.display = id === tabId ? '' : 'none';
-  });
-  ['tabTextBtn','tabStructuredBtn'].forEach(id => {
-    document.getElementById(id).classList.toggle('active', id === tabId+'Btn');
-  });
-}
-
-async function parseTextReport() {
-  const content = document.getElementById('submitContent').value.trim();
-  const team = document.getElementById('submitTeam').value;
-  if (!content) { alert('보고 내용을 입력해 주세요.'); return; }
-  if (!settings.apiKey) { alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.'); return; }
-
-  document.getElementById('parsedPreview').style.display = '';
-  document.getElementById('parsedContent').textContent = '⏳ AI가 파싱 중입니다...';
-
-  try {
-    const rows = await callGeminiParseReport(content, team);
-    document.getElementById('parsedContent').textContent = rows.map(r =>
-      `[${r.status}] ${r.task} — ${r.owner || '미지정'}`
-    ).join('\n');
-  } catch(e) {
-    document.getElementById('parsedContent').textContent = '❌ 파싱 오류: ' + e.message;
-  }
-}
-
-async function submitReport() {
-  const tab = document.getElementById('tabText').style.display !== 'none' ? 'text' : 'structured';
-  const team = document.getElementById(tab === 'text' ? 'submitTeam' : 'submitTeam2').value;
-  const leader = document.getElementById('submitLeader').value.trim() || '팀장';
-
-  if (!team) { alert('팀을 선택해 주세요.'); return; }
-
-  let rows = [];
-  if (tab === 'text') {
-    const content = document.getElementById('submitContent').value.trim();
-    if (!content) { alert('보고 내용을 입력해 주세요.'); return; }
-    if (!settings.apiKey) { alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.'); return; }
-
-    closeModal('submitModal');
-    addMsg(team, 'user', `[주간보고서 제출]\n${content}`, leader, TEAM_COLORS[team] || '#666', 'report-paste');
-    addMsg(team, 'system', '⏳ AI가 보고서를 분석 중입니다...');
-
-    try {
-      rows = await callGeminiParseReport(content, team);
-    } catch(e) {
-      addMsg(team, 'system', '❌ AI 파싱 오류: ' + e.message);
-      return;
-    }
-  } else {
-    // 구조화 입력 — parsedRows 사용
-    rows = parsedRows;
-    if (!rows.length) { alert('업무 행을 추가해 주세요.'); return; }
-    closeModal('submitModal');
-    addMsg(team, 'user', `[구조화 보고서 제출]\n${rows.map(r=>`[${r.status}] ${r.task} (${r.owner})`).join('\n')}`, leader, TEAM_COLORS[team] || '#666', 'report-paste');
-  }
-
-  const now = new Date();
-  reports[team] = {
-    leader, rows,
-    time: `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`
-  };
-
-  addMsg(team, 'assistant',
-    `✅ 보고서 접수 완료!\n\n📋 파싱된 업무 (${rows.length}건):\n${rows.map(r=>`• [${r.status}] ${r.task}${r.owner ? ' — '+r.owner : ''}`).join('\n')}\n\n취합방에서 전체 취합을 진행해 주세요.`,
-    '🤖 AI', '#2d5f9e', 'ai-result'
-  );
-
-  addMsg('collect', 'system', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
-
-  // Firebase에 자동 저장
-  if (fbReady()) {
-    addMsg(team, 'system', '💾 Firebase에 저장 중...');
-    const saved = await fbSaveReport(team, reports[team]);
-    addMsg(team, 'system', saved ? '✅ Firebase 저장 완료! 다른 팀원도 이 보고서를 볼 수 있습니다.' : '⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
-  }
-
-  renderSidebar();
-  renderRightPanel();
-  toast(`✅ ${team} 팀 보고서 제출 완료!`);
-
-  // 폼 초기화
-  document.getElementById('submitContent').value = '';
-  document.getElementById('parsedPreview').style.display = 'none';
-}
-
-// ═══════════════════════════════════════
-//  구조화 입력 행 관리
-// ═══════════════════════════════════════
-function addRowItem() {
-  parsedRows.push({ status: '진행중', task: '', owner: '' });
-  renderRowList();
-}
-function deleteRowItem(i) {
-  parsedRows.splice(i, 1);
-  renderRowList();
-}
-function renderRowList() {
-  const el = document.getElementById('rowList');
-  if (!el) return;
-  el.innerHTML = parsedRows.map((r, i) => `
-    <div class="row-item">
-      <select class="form-select" style="width:80px;padding:4px 6px;font-size:11px;" onchange="parsedRows[${i}].status=this.value">
-        <option ${r.status==='완료'?'selected':''}>완료</option>
-        <option ${r.status==='진행중'?'selected':''}>진행중</option>
-        <option ${r.status==='예정'?'selected':''}>예정</option>
-      </select>
-      <input type="text" class="form-input" style="flex:1;padding:5px 8px;font-size:11.5px;" placeholder="업무내용" value="${r.task}" oninput="parsedRows[${i}].task=this.value">
-      <input type="text" class="form-input" style="width:80px;padding:5px 8px;font-size:11px;" placeholder="담당자" value="${r.owner}" oninput="parsedRows[${i}].owner=this.value">
-      <button class="row-del-btn" onclick="deleteRowItem(${i})">✕</button>
-    </div>
-  `).join('');
-}
-
-// ═══════════════════════════════════════
-//  CLAUDE API 호출 — 보고서 파싱
-// ═══════════════════════════════════════
-// ── 공통 Gemini 호출 (429 시 자동 재시도) ──
-async function callGemini(prompt, retries = 4) {
-  if (!settings.apiKey) throw new Error('API 키가 설정되지 않았습니다. ⚙️ 설정에서 Gemini API 키를 입력해 주세요.');
-  for (let i = 0; i < retries; i++) {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${settings.apiKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-    );
-    if (res.status === 429) {
-      const wait = (i + 1) * 8000;
-      addMsg('collect', 'system', `⏳ API 요청 한도 — ${wait/1000}초 후 재시도 (${i+1}/${retries})...`);
-      await new Promise(r => setTimeout(r, wait));
-      continue;
-    }
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Gemini API 오류: ${res.status} — ${errText.slice(0,120)}`);
-    }
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  }
-  throw new Error('Gemini API 429: API 키 확인 또는 잠시 후 다시 시도해 주세요.');
-}
-
-async function callGeminiParseReport(text, team) {
-  const prompt = `당신은 주간업무보고서를 구조화된 JSON으로 변환하는 파서입니다.
-
-팀명: ${team}
-입력된 보고 텍스트:
-"""
-${text}
-"""
-
-각 업무 항목을 파싱하여 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력:
-[
-  {
-    "status": "완료|진행중|예정 중 하나",
-    "task": "업무내용 (날짜 패턴 포함 가능. 예: 브랜드 가이드라인 시안 (3/14완료))",
-    "owner": "담당자 이름 (없으면 빈 문자열)",
-    "d1": [],
-    "d2": []
-  }
-]
-
-규칙:
-- 완료된 업무 → status: "완료"
-- 진행 중 → status: "진행중"
-- 예정 → status: "예정"
-- task에는 날짜 힌트를 그대로 포함시켜 (예: (3/10~3/21), (3/14완료), (3월 중))
-- d1, d2는 항상 빈 배열로 설정`;
-
-  const txt = await callGemini(prompt);
-  const clean = txt.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
-}
-
-// ═══════════════════════════════════════
-//  전체 취합 & HTML 업데이트
-// ═══════════════════════════════════════
-async function runCollectAll() {
-  // Firebase에서 최신 보고서 먼저 로드
-  if (fbReady()) {
-    addMsg('collect', 'system', '🔄 Firebase에서 최신 보고서 로드 중...');
-    const loaded = await fbLoadAllReports();
-    Object.entries(loaded).forEach(([team, data]) => {
-      if (data && data.rows) reports[team] = data;
-    });
+  if (!fbReady()) {
     renderSidebar();
     renderRightPanel();
+    return;
   }
 
-  const received = Object.keys(reports);
-  if (!received.length) {
-    alert('아직 수신된 팀 보고서가 없습니다.\n각 팀장이 보고서를 제출해야 합니다.');
+  const loadedReports = await fbLoadAllReports();
+  reports = { ...loadedReports };
+  const collected = await fbLoadCollected();
+  if (collected?.summary) collectedSummary = collected.summary;
+  if (collected?.html) updatedReportHTML = collected.html;
+  renderSidebar();
+  renderRightPanel();
+}
+
+function addLoadingMsg() {
+  const wrap = document.createElement('div');
+  wrap.id = 'loadingMsg';
+  wrap.style.cssText = 'display:flex;justify-content:center;padding:8px;';
+  wrap.innerHTML = '<div class="msg-bubble system"><div class="loading-dots"><span></span><span></span><span></span></div> AI 취합 중...</div>';
+  document.getElementById('messages').appendChild(wrap);
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+  return 'loadingMsg';
+}
+
+function removeLoadingMsg() {
+  const loading = document.getElementById('loadingMsg');
+  if (loading) loading.remove();
+}
+
+async function runCollectAll() {
+  if (fbReady()) {
+    const latest = await fbLoadAllReports();
+    reports = { ...reports, ...latest };
+  }
+
+  const receivedTeams = Object.keys(reports);
+  if (!receivedTeams.length) {
+    alert('아직 제출된 팀 보고서가 없습니다.');
     return;
   }
   if (!settings.apiKey) {
-    alert('⚙️ 설정에서 API 키를 먼저 입력해 주세요.');
+    alert('설정에서 Gemini API 키를 입력해 주세요.');
     return;
   }
 
   switchRoom('collect');
-
-  const missing = settings.teams.filter(t => !reports[t]);
-  if (missing.length > 0) {
-    const go = confirm(`아직 보고서를 제출하지 않은 팀이 있습니다:\n${missing.join(', ')}\n\n수신된 팀만으로 취합할까요?`);
-    if (!go) return;
-  }
-
-  addMsg('collect', 'system', `⚡ 취합 시작 — 수신된 ${received.length}개 팀 보고서 처리 중...`);
-
-  // 로딩 메시지
-  const loadId = addLoadingMsg();
+  addSystemMsg('collect', `⚡ ${receivedTeams.length}개 팀 보고서 취합을 시작합니다...`);
+  const loadingId = addLoadingMsg();
 
   try {
-    const summary = await callGeminiSummarize();
-    removeLoadingMsg(loadId);
-    addMsg('collect', 'assistant', summary, '🤖 AI 취합', '#1e3a5f', 'ai-result');
-    // 템플릿 로드 대기 (최대 5초)
-    if (!REPORT_TEMPLATE) {
-      addMsg('collect', 'system', '⏳ 템플릿 로딩 대기 중...');
-      await new Promise(r => setTimeout(r, 3000));
-    }
-    const ok = generateUpdatedReport();
-    if (ok !== false) {
-      addMsg('collect', 'system', `✅ 주간업무보고 HTML 업데이트 완료! [미리보기] 버튼으로 확인하거나 [다운로드] 하세요.`);
-    }
-    toast('✅ 취합 완료! HTML 업데이트됨');
-  } catch(e) {
-    removeLoadingMsg(loadId);
-    addMsg('collect', 'system', '❌ 취합 오류: ' + e.message);
+    collectedSummary = await callGeminiCollectSummary();
+  } catch (error) {
+    console.warn(error);
+    collectedSummary = buildFallbackSummary();
+    addSystemMsg('collect', `⚠️ Gemini 취합 실패로 기본 취합 결과를 생성했습니다. (${error.message})`);
+  } finally {
+    removeLoadingMsg(loadingId);
   }
+
+  updatedReportHTML = buildStandaloneReportHTML();
+  await fbSaveCollected(collectedSummary, updatedReportHTML);
+
+  addMsg('collect', 'assistant', buildCollectChatText(collectedSummary), '🤖 AI 취합', '#1e3a5f', 'ai-result');
+  addSystemMsg('collect', '✅ 취합 완료 — 미리보기 또는 HTML 다운로드가 가능합니다.');
   renderRightPanel();
+  toast('✅ 전체 취합 완료');
 }
 
-let _loadingMsgIdx = null;
-function addLoadingMsg() {
-  const el = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.id = 'loadingMsg';
-  div.style.cssText = 'display:flex;justify-content:center;padding:8px;';
-  div.innerHTML = `<div class="msg-bubble system"><div class="loading-dots"><span></span><span></span><span></span></div> AI 분석 중...</div>`;
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
-  return 'loadingMsg';
-}
-function removeLoadingMsg() {
-  const el = document.getElementById('loadingMsg');
-  if (el) el.remove();
-}
+function buildCollectChatText(summaryObj) {
+  const stats = summaryObj?.stats || computeStats();
+  const overview = (summaryObj?.overview || []).map(line => `• ${line}`).join('\n');
+  const teamLines = (summaryObj?.teamHighlights || []).map(item => `• ${item.team}: ${item.summary}`).join('\n');
+  const issues = (summaryObj?.issues || []).length
+    ? (summaryObj.issues || []).map(line => `• ${line}`).join('\n')
+    : '• 특이 이슈 없음';
 
-async function callGeminiSummarize() {
-  const allReports = Object.entries(reports).map(([team, rep]) => {
-    const rows = rep.rows.map(r => `  [${r.status}] ${r.task}${r.owner ? ' — '+r.owner : ''}`).join('\n');
-    return `=== ${team} 팀 (${rep.leader}, ${rep.rows.length}건) ===\n${rows}`;
-  }).join('\n\n');
-
-  const prompt = `다음은 각 팀장이 제출한 주간업무보고서입니다.
-
-${allReports}
-
-전체를 취합하여 다음 형식으로 요약해 주세요:
-1. 전체 요약 (2-3줄)
-2. 팀별 현황 (각 팀의 핵심 업무 1-2줄)
-3. 이슈/주의사항 (있는 경우)
-4. 총 업무 건수 통계 (완료/진행중/예정)
-
-간결하고 명확하게 작성하세요.`;
-
-  return await callGemini(prompt);
+  return [
+    `📅 ${getCurrentWeekLabel()}`,
+    '',
+    '[전체 요약]',
+    overview || '• 요약 없음',
+    '',
+    '[팀별 현황]',
+    teamLines || '• 팀별 요약 없음',
+    '',
+    '[이슈/주의사항]',
+    issues,
+    '',
+    `[통계] 완료 ${stats.completed} / 진행중 ${stats.inProgress} / 예정 ${stats.planned} / 총 ${stats.total}`
+  ].join('\n');
 }
 
-// ═══════════════════════════════════════
-//  HTML 보고서 생성 (주간업무보고 업데이트)
-// ═══════════════════════════════════════
-let updatedReportHTML = null;
+function buildStandaloneReportHTML() {
+  const summaryObj = collectedSummary || buildFallbackSummary();
+  const stats = summaryObj.stats || computeStats();
+  const teamSections = settings.teams.map(team => {
+    const report = reports[team];
+    const rows = report?.rows || [];
+    const body = rows.length
+      ? rows.map((row, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td><span class="pill ${row.status === '완료' ? 'done' : row.status === '예정' ? 'plan' : 'ing'}">${escapeHtml(row.status)}</span></td>
+            <td>${escapeHtml(row.task)}</td>
+            <td>${escapeHtml(row.owner || report?.leader || '-')}</td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="4" class="empty">제출된 업무가 없습니다.</td></tr>';
 
-function generateUpdatedReport() {
-  if (!REPORT_TEMPLATE) {
-    addMsg('collect', 'system', '❌ 보고서 템플릿 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-    return false;
-  }
-  // defaultGroups를 reports 데이터로 업데이트
-  const newGroups = settings.teams.map((team, idx) => {
-    const clsMap = ['BAT','PMI','KTG','ELIZ','UPLUS'];
-    const cls = clsMap[idx] || 'BAT';
-    const rep = reports[team];
-    if (!rep || !rep.rows.length) {
-      return { dept: team, cls, rows: [{ status:'', owner:'', task:'', d1:[], d2:[] }] };
-    }
-    return {
-      dept: team,
-      cls,
-      rows: rep.rows.map(r => ({
-        status: r.status || '',
-        owner: r.owner || rep.leader || '',
-        task: r.task || '',
-        d1: r.d1 || [],
-        d2: r.d2 || []
-      }))
-    };
-  });
+    return `
+      <section class="team-card">
+        <div class="team-head">
+          <div>
+            <h3>${escapeHtml(team)} 팀</h3>
+            <p>팀장: ${escapeHtml(report?.leader || '-')} · 항목 ${rows.length}건</p>
+          </div>
+          <div class="team-badge" style="background:${roomColor(team)}">${escapeHtml(roomAbbr(team))}</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th style="width:60px;">No.</th><th style="width:90px;">상태</th><th>업무 내용</th><th style="width:120px;">담당자</th></tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </section>
+    `;
+  }).join('');
 
-  // 원본 HTML을 가져와서 defaultGroups 데이터를 교체
-  // (실제로는 원본 HTML 템플릿을 삽입)
-  updatedReportHTML = buildReportHTML(newGroups);
-}
+  const overviewHtml = (summaryObj.overview || []).map(line => `<li>${escapeHtml(line)}</li>`).join('') || '<li>요약 없음</li>';
+  const issueHtml = (summaryObj.issues || []).length
+    ? (summaryObj.issues || []).map(line => `<li>${escapeHtml(line)}</li>`).join('')
+    : '<li>특이 이슈 없음</li>';
+  const highlightHtml = (summaryObj.teamHighlights || []).map(item => `
+    <div class="highlight-row">
+      <strong>${escapeHtml(item.team)}</strong>
+      <span>${escapeHtml(item.summary)}</span>
+    </div>
+  `).join('') || '<div class="highlight-row"><strong>-</strong><span>팀별 요약 없음</span></div>';
 
-function buildReportHTML(newGroups) {
-  if (!REPORT_TEMPLATE) return '';
-  const groupsJson = JSON.stringify(newGroups, null, 2);
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POSI DESIGN 주간업무보고</title>
+<style>
+  body{font-family:'Noto Sans KR',Arial,sans-serif;background:#eef1f6;color:#1a1f2e;margin:0;padding:32px;}
+  .page{max-width:1200px;margin:0 auto;}
+  .hero{background:linear-gradient(135deg,#1e3a5f,#2d5f9e);color:#fff;padding:28px 32px;border-radius:20px;box-shadow:0 12px 32px rgba(30,58,95,.18);}
+  .hero h1{margin:0 0 8px;font-size:30px;}
+  .hero p{margin:4px 0;opacity:.92;}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:14px;margin:24px 0;}
+  .stat{background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 24px rgba(30,58,95,.08);}
+  .stat .label{font-size:12px;color:#6b7280;margin-bottom:8px;}
+  .stat .value{font-size:28px;font-weight:800;color:#1e3a5f;}
+  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;margin-bottom:20px;}
+  .card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 6px 24px rgba(30,58,95,.08);}
+  .card h2{margin:0 0 14px;font-size:20px;color:#1e3a5f;}
+  ul{padding-left:18px;margin:0;line-height:1.8;}
+  .highlight-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #edf0f5;line-height:1.6;}
+  .highlight-row:last-child{border-bottom:none;padding-bottom:0;}
+  .team-card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 6px 24px rgba(30,58,95,.08);}
+  .team-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px;}
+  .team-head h3{margin:0;font-size:20px;color:#1e3a5f;}
+  .team-head p{margin:4px 0 0;color:#6b7280;font-size:13px;}
+  .team-badge{min-width:52px;height:52px;border-radius:14px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;}
+  table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:12px;}
+  th,td{padding:12px 10px;border-bottom:1px solid #edf0f5;text-align:left;font-size:13px;vertical-align:top;}
+  th{background:#f5f7fb;color:#435066;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
+  .pill{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;}
+  .pill.done{background:#dff4e6;color:#1a5c2a;}
+  .pill.ing{background:#dcecff;color:#0d47a1;}
+  .pill.plan{background:#fff3d8;color:#8a5a00;}
+  .empty{text-align:center;color:#6b7280;padding:20px 12px;}
+  .footer{margin-top:24px;color:#6b7280;font-size:12px;text-align:center;}
+  @media (max-width: 900px){body{padding:16px}.stats,.grid{grid-template-columns:1fr}.team-head{align-items:flex-start;}.team-badge{min-width:44px;height:44px;}}
+</style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>POSI DESIGN 주간업무보고</h1>
+      <p>주차: ${escapeHtml(getCurrentWeekLabel())}</p>
+      <p>생성 시각: ${escapeHtml(new Date().toLocaleString('ko-KR'))}</p>
+    </section>
 
-  // 1. defaultGroups 교체
-  let result = REPORT_TEMPLATE.replace(
-    /const defaultGroups = \[[\s\S]*?\];/,
-    `const defaultGroups = ${groupsJson};`
-  );
+    <section class="stats">
+      <div class="stat"><div class="label">완료</div><div class="value">${stats.completed}</div></div>
+      <div class="stat"><div class="label">진행중</div><div class="value">${stats.inProgress}</div></div>
+      <div class="stat"><div class="label">예정</div><div class="value">${stats.planned}</div></div>
+      <div class="stat"><div class="label">총 업무</div><div class="value">${stats.total}</div></div>
+    </section>
 
-  // 2. groups 로드 교체 (localStorage 무시 → defaultGroups 직접 사용)
-  result = result.replace(
-    /let groups = \(\(\) => \{[\s\S]*?\}\)\(\);/,
-    'let groups = JSON.parse(JSON.stringify(defaultGroups));'
-  );
+    <section class="grid">
+      <div class="card">
+        <h2>전체 요약</h2>
+        <ul>${overviewHtml}</ul>
+      </div>
+      <div class="card">
+        <h2>이슈 / 주의사항</h2>
+        <ul>${issueHtml}</ul>
+      </div>
+    </section>
 
-  // 3. 교체 검증
-  const succeeded = result !== REPORT_TEMPLATE && result.length > 1000;
-  console.log('[buildReportHTML] 교체:', succeeded, '길이:', result.length);
+    <section class="card" style="margin-bottom:20px;">
+      <h2>팀별 핵심 포인트</h2>
+      ${highlightHtml}
+    </section>
 
-  return succeeded ? result : REPORT_TEMPLATE;
-}
+    ${teamSections}
 
-// ═══════════════════════════════════════
-//  미리보기 & 다운로드
-// ═══════════════════════════════════════
-function openPreview() {
-  const html = updatedReportHTML || REPORT_TEMPLATE;
-  if (!html) {
-    alert('⏳ 보고서 템플릿 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-    return;
-  }
-  document.getElementById('previewFrame').srcdoc = html;
-  document.getElementById('previewModal').classList.add('open');
+    <div class="footer">이 보고서는 POSI DESIGN AI 취합 허브에서 생성되었습니다.</div>
+  </div>
+</body>
+</html>`;
 }
 
 function downloadReport() {
-  const html = updatedR
+  const html = updatedReportHTML || buildStandaloneReportHTML();
+  if (!html) {
+    alert('다운로드할 보고서가 없습니다.');
+    return;
+  }
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `weekly-report-${getCurrentWeekKey()}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderRightPanel() {
+  const el = document.getElementById('rightPanel');
+  const total = settings.teams.length;
+  const done = Object.keys(reports).length;
+  const stats = (collectedSummary && collectedSummary.stats) ? collectedSummary.stats : computeStats();
+
+  let html = `
+    <div class="progress-section">
+      <div class="progress-title">팀별 제출 현황 (${done}/${total}) · ${escapeHtml(getCurrentWeekLabel())}</div>
+      <div class="team-progress">
+        ${settings.teams.map(team => {
+          const report = reports[team];
+          return `
+            <div class="team-row">
+              <div class="team-row-name">${escapeHtml(team)}</div>
+              <div class="team-row-bar"><div class="team-row-fill" style="width:${report ? 100 : 0}%;background:${roomColor(team)}"></div></div>
+              <div class="team-row-stat" style="color:${report ? '#27ae60' : '#aaa'}">${report ? '✓ 완료' : '대기'}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="ai-action-box">
+      <div class="ai-action-title">🤖 AI 에이전트 액션</div>
+      <div class="ai-action-btns">
+        <button class="btn btn-success" style="width:100%;font-size:12px;" onclick="runCollectAll()">⚡ 전체 취합 & HTML 생성</button>
+        <button class="btn btn-outline" style="width:100%;font-size:12px;" onclick="openPreview()">👁 보고서 미리보기</button>
+        <button class="btn btn-primary" style="width:100%;font-size:12px;" onclick="downloadReport()">⬇️ HTML 다운로드</button>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-card-header" style="background:#eef5ff;color:#1e3a5f;">📌 취합 통계 <span class="tag tag-done">${stats.total}건</span></div>
+      <div class="report-card-body">완료 ${stats.completed}건\n진행중 ${stats.inProgress}건\n예정 ${stats.planned}건</div>
+    </div>
+  `;
+
+  if (collectedSummary?.overview?.length) {
+    html += `
+      <div class="report-card">
+        <div class="report-card-header" style="background:#eef9f1;color:#1a5c2a;">🧠 AI 요약</div>
+        <div class="report-card-body">${escapeHtml(collectedSummary.overview.join('\n'))}</div>
+      </div>
+    `;
+  }
+
+  if (Object.keys(reports).length) {
+    html += '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:4px;">수신된 보고서</div>';
+    Object.entries(reports).forEach(([team, report]) => {
+      html += `
+        <div class="report-card">
+          <div class="report-card-header" style="background:${roomColor(team)}15;color:${roomColor(team)};">
+            <div style="width:24px;height:24px;border-radius:6px;background:${roomColor(team)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${escapeHtml(roomAbbr(team))}</div>
+            ${escapeHtml(team)} — ${escapeHtml(report.leader || '-')}
+            <span class="tag tag-done">${report.rows?.length || 0}건</span>
+          </div>
+          <div class="report-card-body">${escapeHtml((report.rows || []).map(row => `[${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n'))}</div>
+        </div>
+      `;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function refreshStatus() {
+  fbLoadStatus();
+}
+
+function init() {
+  loadSettings();
+  initRooms();
+  renderRowList();
+  switchRoom('collect');
+  renderRightPanel();
+
+  addSystemMsg('collect', [
+    '👋 POSI DESIGN 주간업무보고 AI 취합 허브입니다.',
+    '',
+    '1. 각 팀이 [보고서 제출]에서 내용을 입력합니다.',
+    '2. Gemini가 자유 형식 텍스트를 업무 행으로 파싱합니다.',
+    '3. [전체 취합 & HTML 생성]으로 주간 보고서를 만듭니다.',
+    '4. 보고서 HTML을 미리보기 또는 다운로드할 수 있습니다.',
+    '',
+    '※ Firebase Database URL을 입력하면 팀별 보고서와 취합 결과가 공유됩니다.'
+  ].join('\n'));
+
+  loadReportsOnStart();
+}
+
+init();
+</script>
+
+</body>
+</html>
