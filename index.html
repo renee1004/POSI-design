@@ -15,7 +15,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* ── UI 스타일 (기존과 동일) ── */
+/* ── UI 스타일 ── */
 .topbar { background: var(--navy); padding: 12px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
 .topbar-logo { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
 .topbar-logo span { color: #ff6b35; }
@@ -69,7 +69,6 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
 .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
 .chat-input { flex: 1; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 14px; font-size: 13px; resize: none; outline: none; min-height: 42px; }
 .btn-send { width: 42px; height: 42px; border-radius: 10px; border: none; background: var(--navy); color: #fff; cursor: pointer; font-size: 16px; }
-.input-hint { font-size: 10px; color: var(--muted); margin-top: 5px; }
 .right-panel { background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
 .panel-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
 .panel-title { font-size: 13px; font-weight: 700; color: var(--navy); flex:1; }
@@ -230,7 +229,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
 
 <script>
 // =========================================================
-// 1. Firebase 초기 설정 (여기에 본인의 Config를 붙여넣으세요)
+// 1. Firebase 초기 설정 (여기에 본인의 Config를 덮어쓰세요)
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBbP8bRR243tRj1KZ0vCbDMEVDjdEXXTWA",
@@ -268,13 +267,11 @@ function init() {
   initRooms();
   switchRoom('collect');
   
-  // 🔥 Firestore의 "reports" 컬렉션의 변화를 실시간으로 감지합니다.
   db.collection("reports").onSnapshot((snapshot) => {
-    reports = {}; // 초기화 후 새 데이터 덮어쓰기
+    reports = {}; 
     snapshot.forEach((doc) => {
-      reports[doc.id] = doc.data(); // doc.id는 팀 이름(BAT 등)
+      reports[doc.id] = doc.data(); 
     });
-    // 데이터가 바뀔 때마다 화면(우측 패널 및 사이드바)을 즉시 업데이트
     renderRightPanel();
     renderSidebar();
   });
@@ -294,6 +291,13 @@ function saveSettings() {
   initRooms();
   closeModal('settingsModal');
   toast('✅ 설정 저장 완료');
+}
+
+// 🔥 누락되었던 설정창 열기 함수 추가 완료
+function openSettings() {
+  document.getElementById('apiKeyInput').value = settings.apiKey || '';
+  document.getElementById('teamsInput').value = settings.teams.join(',');
+  document.getElementById('settingsModal').classList.add('open');
 }
 
 function initRooms() {
@@ -316,9 +320,6 @@ function switchRoom(roomId) {
   renderMessages();
 }
 
-// =========================================================
-// 4. UI 렌더링 함수들
-// =========================================================
 function renderSidebar() {
   document.getElementById('roomList').innerHTML = settings.teams.map(t => {
     const rep = reports[t];
@@ -391,7 +392,7 @@ function renderMessages() {
 }
 
 // =========================================================
-// 5. 보고서 파싱 및 Firestore 저장
+// 5. 보고서 파싱 및 Firestore 저장 (에러 처리 강화)
 // =========================================================
 function openSubmitModal() { document.getElementById('submitModal').classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -402,23 +403,27 @@ async function submitReport() {
   const content = document.getElementById('submitContent').value.trim();
 
   if (!team || !content) { alert('팀과 보고 내용을 모두 입력해 주세요.'); return; }
-  if (!settings.apiKey) { alert('설정에서 Gemini API 키를 입력해 주세요.'); return; }
+  if (!settings.apiKey) { alert('우측 상단의 [⚙️ 설정] 버튼을 눌러 Gemini API 키를 먼저 입력해 주세요.'); return; }
 
   closeModal('submitModal');
   toast('⏳ AI 파싱 및 서버 전송 중...');
 
   try {
-    // 1. Gemini로 텍스트 구조화 파싱
     const prompt = `주간업무보고서를 JSON으로 변환. 입력:\n${content}\n형식:[{"status":"완료/진행중/예정","task":"업무내용","owner":"${leader}","d1":[],"d2":[]}]`;
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
+    
+    // 🔥 에러가 났을 때 빈 화면 대신 원인을 알려주는 안전망
+    if (!res.ok) {
+      throw new Error(`AI 서버 응답 오류입니다. API 키가 정확한지 확인해 주세요. (상태 코드: ${res.status})`);
+    }
+
     const data = await res.json();
     const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
     const parsedRows = JSON.parse(cleanJson);
 
-    // 2. 🔥 파싱된 데이터를 Firestore 데이터베이스에 저장
     const now = new Date();
     await db.collection("reports").doc(team).set({
       leader: leader,
@@ -436,7 +441,7 @@ async function submitReport() {
 }
 
 // =========================================================
-// 6. 전체 취합 및 HTML 생성 (기존 로직 유지)
+// 6. 전체 취합 및 HTML 생성
 // =========================================================
 let updatedReportHTML = null;
 let REPORT_TEMPLATE = '';
@@ -456,7 +461,6 @@ function runCollectAll() {
     return;
   }
 
-  // Firestore에서 받은 실시간 데이터를 템플릿용 구조로 매핑
   const newGroups = settings.teams.map((team, idx) => {
     const clsMap = ['BAT','PMI','KTG','ELIZ','UPLUS'];
     const rep = reports[team];
