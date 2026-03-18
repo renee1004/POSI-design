@@ -584,7 +584,7 @@ body {
         <textarea class="chat-input" id="chatInput" placeholder="메시지를 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)" rows="1"></textarea>
         <button class="btn-send" onclick="sendMessage()">➤</button>
       </div>
-      <div class="input-hint">📌 보고서 제출은 [보고서 제출] 버튼 사용 | AI 취합은 [전체 취합 & 보고서 업데이트] 클릭</div>
+      <div class="input-hint">📌 기간 힌트 예시: (3/17), (3/14완료), (3/10~3/21), (~3/21), (3월 중)</div>
     </div>
   </div>
 
@@ -1102,34 +1102,40 @@ function getReportWeeks() {
 
 function parseTaskDateRange(task) {
   const source = String(task || '');
+  const compact = source.replace(/\\/g, '').replace(/\s+/g, ' ').trim();
   const Y = getWeekInfo().year || new Date().getFullYear();
+  const { w1, w2 } = getReportWeeks();
+  const visibleStart = w1[0];
+  const visibleEnd = w2[6];
+  const rangeMark = '[~〜～\-–—]';
   let m = null;
 
-  m = source.match(/(\d{1,2})\/(\d{1,2})\s*[~-]\s*(\d{1,2})\/(\d{1,2})/);
+  // (3/10~3/21), 3/10-3/21
+  m = compact.match(new RegExp(`(\\d{1,2})\\s*\\/\\s*(\\d{1,2})\\s*${rangeMark}\\s*(\\d{1,2})\\s*\\/\\s*(\\d{1,2})`));
   if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };
 
-  m = source.match(/(\d{1,2})월\s*(\d{1,2})일\s*[~-]\s*(\d{1,2})월\s*(\d{1,2})일/);
+  // (3/10~21) 같은 월 범위
+  m = compact.match(new RegExp(`(\\d{1,2})\\s*\\/\\s*(\\d{1,2})\\s*${rangeMark}\\s*(\\d{1,2})(?!\\s*\\/)`));
+  if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[1] - 1, +m[3]) };
+
+  // 3월 10일~3월 21일
+  m = compact.match(/(\d{1,2})월\s*(\d{1,2})일\s*[~〜～\-–—]\s*(\d{1,2})월\s*(\d{1,2})일/);
   if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };
 
-  m = source.match(/~\s*(\d{1,2})\/(\d{1,2})/);
-  if (m) return { start: new Date(Y, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };
+  // 3월 10일~21일 같은 월 범위
+  m = compact.match(/(\d{1,2})월\s*(\d{1,2})일\s*[~〜～\-–—]\s*(\d{1,2})일/);
+  if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[1] - 1, +m[3]) };
 
-  m = source.match(/~\s*(\d{1,2})월\s*(\d{1,2})일/);
-  if (m) return { start: new Date(Y, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };
+  // (~3/21), ~3/21
+  m = compact.match(/[~〜～]\s*(\d{1,2})\s*\/\s*(\d{1,2})/);
+  if (m) return { start: visibleStart, end: new Date(Y, +m[1] - 1, +m[2]) };
 
-  m = source.match(/(\d{1,2})월\s*(\d{1,2})일/);
-  if (m) {
-    const d = new Date(Y, +m[1] - 1, +m[2]);
-    return { start: d, end: d };
-  }
+  // (~3월 21일), ~3월 21일
+  m = compact.match(/[~〜～]\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (m) return { start: visibleStart, end: new Date(Y, +m[1] - 1, +m[2]) };
 
-  m = source.match(/(\d{1,2})\/(\d{1,2})/);
-  if (m) {
-    const d = new Date(Y, +m[1] - 1, +m[2]);
-    return { start: d, end: d };
-  }
-
-  m = source.match(/(\d{1,2})월\s*(초|중순|중|말)/);
+  // (3월 중), 3월 중, 3월 중순, 3월 말, 3월 초
+  m = compact.match(/(\d{1,2})월\s*(초|중순|중|말)/);
   if (m) {
     const mo = +m[1] - 1;
     if (m[2] === '초') return { start: new Date(Y, mo, 1), end: new Date(Y, mo, 10) };
@@ -1137,22 +1143,37 @@ function parseTaskDateRange(task) {
     return { start: new Date(Y, mo, 11), end: new Date(Y, mo, 20) };
   }
 
-  m = source.match(/\((\d{1,2})월(?:\s*(?:초|중순|중|말))?\)/);
+  // (3월)
+  m = compact.match(/\((\d{1,2})월\)/);
   if (m) {
     const mo = +m[1] - 1;
     return { start: new Date(Y, mo, 1), end: new Date(Y, mo + 1, 0) };
   }
 
-  if (/이번주|금주/.test(source)) {
-    const { w1 } = getReportWeeks();
+  // (3/14완료), (3/17) 같은 단일 날짜 힌트
+  m = compact.match(/(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*(?:완료|마감|제출))?/);
+  if (m) {
+    const d = new Date(Y, +m[1] - 1, +m[2]);
+    return { start: d, end: d };
+  }
+
+  // 3월 14일 완료, 3월 17일
+  m = compact.match(/(\d{1,2})월\s*(\d{1,2})일(?:\s*(?:완료|마감|제출))?/);
+  if (m) {
+    const d = new Date(Y, +m[1] - 1, +m[2]);
+    return { start: d, end: d };
+  }
+
+  if (/이번주|금주/.test(compact)) {
     return { start: w1[0], end: w1[6] };
   }
 
-  if (/다음주|차주/.test(source)) {
-    const { w2 } = getReportWeeks();
+  if (/다음주|차주/.test(compact)) {
     return { start: w2[0], end: w2[6] };
   }
 
+  // 날짜가 표시 주간 밖으로 나간 경우도 일단 반환하되, 표시는 현재 2주 범위 안에서만 찍힘
+  if (visibleEnd < visibleStart) return null;
   return null;
 }
 
