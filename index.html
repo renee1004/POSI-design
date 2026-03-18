@@ -531,7 +531,7 @@ body {
   <div class="topbar-right">
     <div class="status-dot"></div>
     <div class="status-txt">AI 에이전트 대기중</div>
-    <!-- 설정 버튼 비활성화 (API 키 하드코딩) -->
+    <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);font-size:11px;" onclick="openSettings()">⚙️ 설정</button>
   </div>
 </div>
 
@@ -678,8 +678,12 @@ body {
         <div class="api-section-desc">무료 발급: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#856404">aistudio.google.com/apikey</a><br>키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
       </div>
       <div class="form-group">
-        <label class="form-label">API Key</label>
+        <label class="form-label">Gemini API Key</label>
         <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza..." oninput="autoSaveApiKey(this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Firebase Database URL</label>
+        <input type="text" class="form-input" id="fbUrlInput" placeholder="https://프로젝트명-default-rtdb.asia-southeast1.firebasedatabase.app">
       </div>
       <div class="form-group">
         <label class="form-label">팀 목록 (쉼표로 구분)</label>
@@ -721,8 +725,8 @@ body {
 //  STATE
 // ═══════════════════════════════════════
 let settings = {
-  apiKey: 'AIzaSyAJeKLD1W3jISZwKaH7d_VO3Asa9ZzcW2I',       // ← Gemini API 키
-  fbUrl: 'https://posi-design-default-rtdb.asia-southeast1.firebasedatabase.app', // ← Firebase Realtime DB URL (https://xxx.firebaseio.com)
+  apiKey: 'YOUR_GEMINI_API_KEY_HERE',       // ← Gemini API 키
+  fbUrl: 'YOUR_FIREBASE_DATABASE_URL_HERE', // ← Firebase Realtime DB URL (https://xxx.firebaseio.com)
   teams: ['BAT','PMI','KT&G글로벌','엘리자베스아덴','U+']
 };
 let currentRoom = 'collect';
