@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POSI DESIGN — 주간업무 AI 취합 허브</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --navy: #1e3a5f;
+  --blue: #2d5f9e;
+  --blue-lt: #4a7fc0;
+  --accent: #ff6b35;
+  --green: #27ae60;
+  --amber: #d45b00;
+  --bg: #eef1f6;
+  --card: #ffffff;
+  --border: #c8cdd6;
+  --text: #1a1f2e;
+  --muted: #6b7280;
+  --shadow: 0 4px 24px rgba(30,58,95,.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--navy);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.topbar-logo {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.3px;
+}
+.topbar-logo span { color: #ff6b35; }
+.topbar-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.6);
+  border-left: 1px solid rgba(255,255,255,.2);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #27ae60;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(39,174,96,.5); }
+  50% { opacity:.8; box-shadow:0 0 0 6px rgba(39,174,96,0); }
+}
+.status-txt { font-size: 11px; color: rgba(255,255,255,.7); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 0;
+  min-height: calc(100vh - 50px);
+}
+
+/* ── SIDEBAR (팀 방 목록) ── */
+.sidebar {
+  background: #fff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.room-list { overflow-y: auto; flex:1; padding: 8px 0; }
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+}
+.room-item:hover { background: #f5f7fa; }
+.room-item.active {
+  background: #e8f0fb;
+  border-left-color: var(--blue);
+}
+.room-item.active .room-name { color: var(--navy); font-weight: 700; }
+.room-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.room-info { flex:1; min-width:0; }
+.room-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.room-last { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.room-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.room-item.done .room-badge { background: var(--green); }
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 16px;
+}
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .8px;
+  padding: 6px 16px 4px;
+  text-transform: uppercase;
+}
+.collect-room {
+  margin: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--blue);
+  background: #e8f0fb;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.collect-room-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  display: flex; align-items: center; gap: 6px;
+}
+.collect-room-sub { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+
+/* ── MAIN CHAT ── */
+.main-chat {
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fc;
+  overflow: hidden;
+}
+.chat-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.chat-header-avatar {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff;
+}
+.chat-header-info { flex:1; }
+.chat-header-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+.chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.chat-header-actions { display: flex; gap: 8px; }
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all .15s;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { background: #1e8449; }
+.btn-outline { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+.btn-outline:hover { background: #e8f0fb; }
+.btn-amber { background: #fff5e6; color: var(--amber); border: 1px solid #e8a070; }
+.btn-amber:hover { background: #fde9d0; }
+
+/* 메시지 영역 */
+.messages {
+  flex:1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.msg-wrap { display: flex; align-items: flex-start; gap: 10px; }
+.msg-wrap.self { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.msg-content { max-width: 65%; }
+.msg-name { font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+.msg-wrap.self .msg-name { text-align: right; }
+.msg-bubble {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-wrap.self .msg-bubble {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.msg-bubble.report-paste {
+  background: #f0f4fa;
+  border: 1.5px dashed var(--blue-lt);
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.msg-bubble.ai-result {
+  background: linear-gradient(135deg, #e8f4fb 0%, #eef6f0 100%);
+  border: 1.5px solid #a8d4f0;
+}
+.msg-bubble.system {
+  background: #fffbe6;
+  border: 1px dashed #e8c860;
+  font-size: 11.5px;
+  color: #6a4a00;
+}
+.msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.msg-wrap.self .msg-time { text-align: right; }
+
+/* 입력창 */
+.chat-input-wrap {
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 42px;
+  max-height: 120px;
+  transition: border-color .15s;
+}
+.chat-input:focus { border-color: var(--blue); }
+.btn-send {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: var(--navy);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.btn-send:hover { background: var(--blue); }
+.input-hint { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+/* ── RIGHT PANEL (AI 취합 결과 + 미리보기) ── */
+.right-panel {
+  background: #fff;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-title { font-size: 13px; font-weight: 700; color: var(--navy); flex:1; }
+.panel-body { flex:1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* 수신 카드 */
+.report-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.report-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.report-card-body {
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #333;
+  background: #fafbfd;
+  border-top: 1px solid var(--border);
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.report-card .tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-left: auto;
+}
+.tag-done { background: #d4edda; color: #1a5c2a; }
+.tag-wait { background: #fff3cd; color: #856404; }
+.tag-ing { background: #cce5ff; color: #004085; }
+
+/* 진행 상황 */
+.progress-section { }
+.progress-title { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing:.5px; text-transform:uppercase; }
+.team-progress { display: flex; flex-direction: column; gap: 7px; }
+.team-row { display: flex; align-items: center; gap: 8px; }
+.team-row-name { font-size: 11.5px; font-weight: 600; width: 75px; flex-shrink:0; }
+.team-row-bar { flex:1; height: 7px; background: #e8ecf2; border-radius: 4px; overflow:hidden; }
+.team-row-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.team-row-stat {
+  font-size: 10px;
+  font-weight: 700;
+  width: 36px;
+  text-align: right;
+  flex-shrink:0;
+}
+
+.ai-action-box {
+  background: linear-gradient(135deg, #e8f0fb 0%, #eef5ff 100%);
+  border: 1.5px solid var(--blue-lt);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ai-action-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 8px; display:flex; align-items:center; gap:6px; }
+.ai-action-btns { display: flex; flex-direction: column; gap: 6px; }
+
+/* 로딩 */
+.loading-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--blue-lt);
+  margin: 0 2px;
+  animation: bounce 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay:.2s; }
+.loading-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes bounce {
+  0%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+/* 토스트 */
+#toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 999;
+}
+#toast.show { opacity:1; transform: translateY(0); }
+
+/* 모달 */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 640px;
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-header-title { font-size: 15px; font-weight: 700; color: var(--navy); flex:1; }
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+.modal-body { padding: 20px; overflow-y: auto; flex:1; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 11.5px; font-weight: 700; color: var(--navy); margin-bottom: 5px; display:block; }
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--blue); }
+.form-textarea { resize: vertical; min-height: 120px; }
+
+.parsed-preview {
+  background: #f5f7fa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.row-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.row-item {
+  background: #f5f7fa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; align-items:center; gap:10px;
+}
+.row-item-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; flex-shrink:0; }
+.row-item-task { font-size: 12px; flex:1; }
+.row-item-owner { font-size: 11px; color: var(--muted); flex-shrink:0; }
+.row-del-btn { background: none; border:none; color: #c0392b; cursor:pointer; font-size:14px; flex-shrink:0; }
+
+/* API 설정 섹션 */
+.api-section {
+  background: #fffbe6;
+  border: 1px dashed #e8c860;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.api-section-title { font-size: 11.5px; font-weight: 700; color: #6a4a00; margin-bottom: 6px; }
+.api-section-desc { font-size: 11px; color: #856404; line-height: 1.5; }
+
+/* 탭 */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab-btn {
+  flex:1; padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: var(--muted);
+  font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.tab-btn.active { background: var(--navy); color:#fff; border-color: var(--navy); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  .right-panel { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">POSI <span>DESIGN</span></div>
+  <div class="topbar-sub">주간업무보고 AI 취합 허브</div>
+  <div class="topbar-right">
+    <div class="status-dot"></div>
+    <div class="status-txt">AI 에이전트 대기중</div>
+    <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);font-size:11px;" onclick="openSettings()">⚙️ 설정</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">🏠 팀별 에이전트 방</div>
+
+    <div class="sidebar-label">각 팀 보고방</div>
+    <div class="room-list" id="roomList">
+      <!-- JS로 렌더 -->
+    </div>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">취합 에이전트</div>
+    <div class="collect-room" onclick="switchRoom('collect')">
+      <div class="collect-room-title">🤖 AI 취합방</div>
+      <div class="collect-room-sub">전 팀 보고서 자동 취합 · 업데이트</div>
+    </div>
+    <div style="padding:12px;">
+      <button class="btn btn-success" style="width:100%;font-size:12px;" onclick="runCollectAll()">
+        ⚡ 전체 취합 & 보고서 업데이트
+      </button>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:5px;">수신된 보고서를 AI로 취합하여<br>주간업무보고 HTML에 자동 반영</div>
+    </div>
+  </div>
+
+  <!-- MAIN CHAT -->
+  <div class="main-chat">
+    <div class="chat-header" id="chatHeader">
+      <div class="chat-header-avatar" id="chatAvatar" style="background:#1e3a5f;">🤖</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name" id="chatName">AI 취합방</div>
+        <div class="chat-header-sub" id="chatSub">전체 취합 & 주간업무보고 자동 업데이트</div>
+      </div>
+      <div class="chat-header-actions">
+        <button class="btn btn-amber" onclick="openSubmitModal()">📤 보고서 제출</button>
+        <button class="btn btn-outline" onclick="openPreview()">👁 미리보기</button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <!-- 메시지 렌더 -->
+    </div>
+
+    <div class="chat-input-wrap">
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="메시지를 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)" rows="1"></textarea>
+        <button class="btn-send" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">📌 보고서 제출은 [보고서 제출] 버튼 사용 | AI 취합은 [전체 취합 & 보고서 업데이트] 클릭</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="panel-header">
+      <div class="panel-title">📊 취합 현황</div>
+      <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;" onclick="refreshStatus()">새로고침</button>
+    </div>
+    <div class="panel-body" id="rightPanel">
+      <!-- JS로 렌더 -->
+    </div>
+  </div>
+
+</div>
+
+<!-- 보고서 제출 모달 -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-title">📤 팀별 주간업무보고서 제출</div>
+      <button class="modal-close" onclick="closeModal('submitModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabText')" id="tabTextBtn">📝 텍스트 입력</button>
+        <button class="tab-btn" onclick="switchTab('tabStructured')" id="tabStructuredBtn">🗂 구조화 입력</button>
+      </div>
+
+      <!-- 텍스트 탭 -->
+      <div id="tabText">
+        <div class="form-group">
+          <label class="form-label">팀 선택</label>
+          <select class="form-select" id="submitTeam">
+            <option value="">팀을 선택하세요</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">팀장 이름</label>
+          <input type="text" class="form-input" id="submitLeader" placeholder="예: 홍길동 팀장">
+        </div>
+        <div class="form-group">
+          <label class="form-label">보고 내용 (자유 형식 — AI가 자동 파싱)</label>
+          <textarea class="form-textarea" id="submitContent" style="min-height:160px;"
+            placeholder="예시:
+[완료] 브랜드 가이드라인 시안 제작 (3/14 완료) - 홍길동
+[진행중] 패키지 디자인 수정 (3/10~3/21) - 이영희
+[예정] 신제품 런칭 포스터 기획 (3월 중) - 박민수
+
+자유 형식으로 작성해도 AI가 알아서 파싱합니다."></textarea>
+        </div>
+        <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="parseTextReport()">🔍 AI 파싱 미리보기</button>
+        <div id="parsedPreview" style="display:none;">
+          <div class="form-label" style="margin-bottom:6px;">📋 파싱 결과 미리보기</div>
+          <div id="parsedContent" class="parsed-preview"></div>
+        </div>
+      </div>
+
+      <!-- 구조화 입력 탭 -->
+      <div id="tabStructured" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">팀 선택</label>
+          <select class="form-select" id="submitTeam2">
+            <option value="">팀을 선택하세요</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">업무 행 목록</label>
+          <div id="rowList" class="row-list"></div>
+          <button class="btn btn-outline" style="width:100%;margin-top:8px;font-size:11.5px;" onclick="addRowItem()">+ 업무 행 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('submitModal')">취소</button>
+      <button class="btn btn-success" onclick="submitReport()">✅ 제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-title">⚙️ AI 에이전트 설정</div>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="api-section">
+        <div class="api-section-title">🔑 Google Gemini API 키 (무료)</div>
+        <div class="api-section-desc">무료 발급: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#856404">aistudio.google.com/apikey</a><br>키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gemini API Key</label>
+        <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza..." oninput="autoSaveApiKey(this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Firebase Database URL</label>
+        <input type="text" class="form-input" id="fbUrlInput" placeholder="https://프로젝트명-default-rtdb.asia-southeast1.firebasedatabase.app" oninput="autoSaveFbUrl(this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">팀 목록 (쉼표로 구분)</label>
+        <input type="text" class="form-input" id="teamsInput" value="BAT,PMI,KT&G글로벌,엘리자베스아덴,U+">
+      </div>
+      <div class="form-group">
+        <label class="form-label">보고 주차 (자동 계산)</label>
+        <input type="text" class="form-input" id="weekLabel" placeholder="예: 2025년 12주차 (자동)" oninput="autoSaveWeekLabel(this.value)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('settingsModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 미리보기 모달 -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal" style="width:760px;max-width:97vw;">
+    <div class="modal-header">
+      <div class="modal-header-title">👁 주간업무보고 미리보기</div>
+      <button class="modal-close" onclick="closeModal('previewModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <iframe id="previewFrame" style="width:100%;height:500px;border:none;"></iframe>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('previewModal')">닫기</button>
+      <button class="btn btn-success" onclick="downloadReport()">⬇️ HTML 다운로드</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✅ 완료</div>
+
+
+<script>
+// ═══════════════════════════════════════
+//  POSI DESIGN — 실행 가능한 단일 HTML 버전
+// ═══════════════════════════════════════
+
+const STORAGE_KEY = 'posiHubSettingsV2';
+const MESSAGE_LIMIT = 120;
+
+let settings = {
+  apiKey: '',
+  fbUrl: '',
+  teams: ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'],
+  weekLabel: ''
+};
+
+let currentRoom = 'collect';
+let messages = {};
+let reports = {};
+let parsedRows = [];
+let collectedSummary = null;
+let updatedReportHTML = '';
+
+const TEAM_COLORS = {
+  'BAT': '#1e3a5f',
+  'PMI': '#c0392b',
+  'KT&G글로벌': '#27ae60',
+  '엘리자베스아덴': '#8e44ad',
+  'U+': '#d4a800',
+  'collect': '#2d5f9e'
+};
+
+const TEAM_ABBR = {
+  'BAT': 'BAT',
+  'PMI': 'PMI',
+  'KT&G글로벌': 'KTG',
+  '엘리자베스아덴': 'ELZ',
+  'U+': 'U+',
+  'collect': '🤖'
+};
+
+function getNow() {
+  return new Date();
+}
+
+function formatTime(dt = getNow()) {
+  return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nl2br(value) {
+  return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+const WEEKLY_REPORT_TEMPLATE = "<!DOCTYPE html>\n<html lang=\"ko\">\n\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>POSI DESIGN TEAM 주간업무보고</title>\n    <style>\n        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');\n\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        html,\n        body {\n            height: 100%;\n        }\n\n        body {\n            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;\n            background: #eef1f6;\n            padding: 12px;\n            font-size: 11.5px;\n            color: #222;\n            display: flex;\n            flex-direction: column;\n            min-height: 100vh;\n        }\n\n        .page-wrapper {\n            background: #fff;\n            border-radius: 10px;\n            box-shadow: 0 4px 24px rgba(0, 0, 0, .10);\n            overflow: hidden;\n            display: flex;\n            flex-direction: column;\n            flex: 1;\n        }\n\n        /* ── 툴바 ── */\n        .toolbar {\n            display: flex;\n            align-items: center;\n            gap: 7px;\n            padding: 9px 14px;\n            background: #fff;\n            border-bottom: 1px solid #dde2ea;\n            flex-shrink: 0;\n            flex-wrap: wrap;\n        }\n\n        .toolbar-title {\n            font-weight: 700;\n            font-size: 13px;\n            color: #1e3a5f;\n            flex: 1;\n            white-space: nowrap;\n        }\n\n        .edit-hint {\n            font-size: 10.5px;\n            color: #888;\n            background: #f5f7fa;\n            border-radius: 10px;\n            padding: 2px 9px;\n            white-space: nowrap;\n        }\n\n        .btn {\n            padding: 5px 13px;\n            border-radius: 6px;\n            border: none;\n            cursor: pointer;\n            font-size: 11px;\n            font-weight: 600;\n            font-family: inherit;\n        }\n\n        .btn-print {\n            background: #1e3a5f;\n            color: #fff;\n        }\n\n        .btn-print:hover {\n            background: #2d5f9e;\n        }\n\n\n        .btn-save {\n            background: #27ae60;\n            color: #fff;\n        }\n\n        .btn-save:hover {\n            background: #1e8449;\n        }\n\n        .btn-reset {\n            background: #fdecea;\n            color: #c0392b;\n            border: 1px solid #e74c3c;\n        }\n\n        .btn-reset:hover {\n            background: #fadbd8;\n        }\n\n        .btn-auto {\n            background: #e8f4fd;\n            color: #1a6bb5;\n            border: 1px solid #1a6bb5;\n        }\n\n        .btn-auto:hover {\n            background: #c8e4f8;\n        }\n\n        /* ── 제목 ── */\n        .report-title {\n            background: #1e3a5f;\n            color: #fff;\n            text-align: center;\n            padding: 9px 14px;\n            font-size: 13px;\n            font-weight: 700;\n            flex-shrink: 0;\n        }\n\n        .report-title .sub {\n            font-weight: 400;\n            font-size: 11.5px;\n            margin-left: 5px;\n            opacity: .85;\n        }\n\n        .week-badge {\n            display: inline-block;\n            background: rgba(255, 255, 255, .18);\n            border-radius: 14px;\n            padding: 2px 11px;\n            font-size: 10.5px;\n            font-weight: 600;\n            margin-left: 9px;\n            vertical-align: middle;\n        }\n\n        /* ── 테이블 스크롤 ── */\n        .table-scroll {\n            overflow-x: auto;\n            flex: 1;\n        }\n\n        /* ── 테이블 ── */\n        table {\n            width: max-content;\n            min-width: 100%;\n            border-collapse: collapse;\n            table-layout: auto;\n        }\n\n        th,\n        td {\n            border: 1px solid #c8cdd6;\n            text-align: center;\n            padding: 3px 5px;\n            vertical-align: middle;\n        }\n\n        /* 헤더 */\n        thead tr.week-label th {\n            font-size: 11px;\n            font-weight: 700;\n            padding: 5px 4px;\n            border-bottom: 2px solid #fff;\n        }\n\n        th.week1-lbl {\n            background: #1e3a5f;\n            color: #fff;\n        }\n\n        th.week2-lbl {\n            background: #3a6faa;\n            color: #fff;\n        }\n\n        th.col-fixed {\n            background: #1e3a5f;\n            color: transparent;\n            border-color: #1e3a5f;\n        }\n\n        thead tr.date-row th {\n            background: #2d5f9e;\n            color: #fff;\n            font-weight: 600;\n            font-size: 10.5px;\n            padding: 5px 3px;\n            white-space: nowrap;\n        }\n\n        thead tr.date-row th.col-dept {\n            background: #1e3a5f;\n        }\n\n        thead tr.date-row th.col-status {\n            background: #1e3a5f;\n        }\n\n        thead tr.date-row th.col-task {\n            background: #1e3a5f;\n            text-align: center;\n            padding-left: 5px;\n        }\n\n        thead tr.date-row th.col-owner {\n            background: #1e3a5f;\n            min-width: 60px;\n        }\n\n        thead tr.date-row th.col-del {\n            background: #1e3a5f;\n            width: 22px;\n        }\n\n        thead tr.date-row th.weekend {\n            background: #3f74b5;\n        }\n\n        thead tr.date-row th.w2-sep {\n            border-left: 1px solid #1e3a5f;\n        }\n\n        /* 데이터 셀 */\n        td.dept-cell {\n            font-weight: 700;\n            font-size: 11px;\n            white-space: nowrap;\n            min-width: 50px;\n        }\n\n        td.status-cell {\n            font-size: 10.5px;\n            font-weight: 600;\n            white-space: nowrap;\n            min-width: 44px;\n            cursor: pointer;\n        }\n\n        td.status-cell:hover {\n            opacity: .75;\n        }\n\n        .status-done {\n            color: #1a6bb5;\n        }\n\n        .status-ing {\n            color: #d45b00;\n        }\n\n        .status-plan {\n            color: #666;\n        }\n\n        td.task-cell {\n            text-align: center;\n            padding-left: 5px;\n            white-space: nowrap;\n            min-width: 80px;\n        }\n\n        td.owner-cell {\n            font-size: 10.5px;\n            white-space: nowrap;\n            min-width: 60px;\n        }\n\n        td.date-cell {\n            width: 32px;\n            min-width: 30px;\n            font-size: 13px;\n            cursor: pointer;\n            user-select: none;\n        }\n\n        td.date-cell:hover {\n            filter: brightness(.92);\n        }\n\n        td.date-cell.weekend {\n            background: #f0edff !important;\n        }\n\n        /* 오늘 날짜 셀 - 개별 박스 없애고 미세한 배경만 */\n        td.date-cell.today {\n            background: rgba(255, 107, 53, 0.07) !important;\n        }\n\n        thead th.today-th {\n            background: rgba(255, 107, 53, 0.45) !important;\n            color: #fff;\n        }\n\n        /* 오늘 열 오버레이 */\n        .today-col-overlay {\n            position: absolute;\n            border: 2.5px solid #ff6b35;\n            border-radius: 3px;\n            pointer-events: none;\n            z-index: 20;\n            box-shadow: 0 0 12px rgba(255, 107, 53, 0.22);\n            background: rgba(255, 107, 53, 0.03);\n        }\n\n        td.date-cell.w2-sep {\n            border-left: 1px solid #2d5f9e;\n        }\n\n        td.del-cell {\n            width: 22px;\n            min-width: 22px;\n        }\n\n        .btn-del-row {\n            background: none;\n            border: none;\n            color: #c0392b;\n            cursor: pointer;\n            font-size: 13px;\n            padding: 0 2px;\n            line-height: 1;\n        }\n\n        .btn-del-row:hover {\n            color: #e74c3c;\n        }\n\n        /* 편집 가능 셀 스타일 */\n        [contenteditable] {\n            outline: none;\n        }\n\n        [contenteditable]:hover {\n            background: rgba(45, 95, 158, .07) !important;\n            outline: 1px dashed #4a7fc0;\n            border-radius: 2px;\n            cursor: text;\n        }\n\n        [contenteditable]:focus {\n            background: rgba(45, 95, 158, .12) !important;\n            outline: 2px solid #4a7fc0;\n            border-radius: 2px;\n        }\n\n        /* 부서 배경 */\n        tr.dept-BAT td {\n            background: #e8f0fb;\n        }\n\n        tr.dept-PMI td {\n            background: #fde9e0;\n        }\n\n        tr.dept-KTG td {\n            background: #e5f5e0;\n        }\n\n        tr.dept-ELIZ td {\n            background: #f0e8f7;\n        }\n\n        tr.dept-UPLUS td {\n            background: #fffbe6;\n        }\n\n        tr.dept-BAT td.dept-cell {\n            background: #b8d0f5;\n            color: #1a3f80;\n        }\n\n        tr.dept-PMI td.dept-cell {\n            background: #f9c0a8;\n            color: #8a2a0a;\n        }\n\n        tr.dept-KTG td.dept-cell {\n            background: #a8d8a0;\n            color: #1a5010;\n        }\n\n        tr.dept-ELIZ td.dept-cell {\n            background: #d0b0eb;\n            color: #50168a;\n        }\n\n        tr.dept-UPLUS td.dept-cell {\n            background: #fce090;\n            color: #6a4a00;\n        }\n\n        tr.dept-BAT td.date-cell.weekend {\n            background: #d0e4f8 !important;\n        }\n\n        tr.dept-PMI td.date-cell.weekend {\n            background: #fbcab8 !important;\n        }\n\n        tr.dept-KTG td.date-cell.weekend {\n            background: #c8e8c0 !important;\n        }\n\n        tr.dept-ELIZ td.date-cell.weekend {\n            background: #dcc8f0 !important;\n        }\n\n        tr.dept-UPLUS td.date-cell.weekend {\n            background: #fce898 !important;\n        }\n\n        /* 행 추가 행 */\n        tr.add-row-tr td {\n            background: #f8f9fc !important;\n            padding: 2px;\n            border-top: 2px dashed #c8cdd6 !important;\n        }\n\n        tr.add-row-tr:last-child td {\n            border-bottom: 3px solid #1e3a5f;\n        }\n\n        .btn-add-row {\n            background: none;\n            border: 1px dashed #4a7fc0;\n            color: #4a7fc0;\n            border-radius: 4px;\n            padding: 2px 10px;\n            cursor: pointer;\n            font-size: 10.5px;\n            font-family: inherit;\n            font-weight: 600;\n        }\n\n        .btn-add-row:hover {\n            background: #e8f0fb;\n        }\n\n        /* 저장 알림 */\n        #saveMsg {\n            position: fixed;\n            bottom: 18px;\n            right: 22px;\n            background: #27ae60;\n            color: #fff;\n            padding: 7px 18px;\n            border-radius: 20px;\n            font-size: 11.5px;\n            font-weight: 600;\n            opacity: 0;\n            transition: opacity .3s;\n            pointer-events: none;\n            z-index: 999;\n        }\n\n        #saveMsg.show {\n            opacity: 1;\n        }\n\n        @media print {\n            body {\n                background: #fff;\n                padding: 4px;\n                font-size: 10px;\n            }\n\n            .toolbar {\n                display: none;\n            }\n\n            .page-wrapper {\n                box-shadow: none;\n                border-radius: 0;\n            }\n\n            .btn-del-row,\n            .btn-add-row {\n                display: none;\n            }\n        }\n    </style>\n</head>\n\n<body>\n    <div class=\"page-wrapper\">\n\n        <div class=\"toolbar\">\n            <div class=\"toolbar-title\">📋 POSI DESIGN TEAM — 디자인 연구소 주간업무보고</div>\n            <span class=\"edit-hint\">✏️ 셀 클릭 → 직접 편집 &nbsp;|&nbsp; 날짜 셀 클릭 → ● 토글 &nbsp;|&nbsp; 구분 클릭 → 상태 변경\n                &nbsp;|&nbsp; 🔄 업무내용 저장 시 날짜 자동 채우기</span>\n            <button class=\"btn btn-save\" onclick=\"saveNow()\">💾 저장</button>\n            <button class=\"btn btn-auto\" onclick=\"autoFillAllDates()\">🔄 날짜 자동 채우기</button>\n            <button class=\"btn btn-reset\" onclick=\"resetData()\">↺ 초기화</button>\n            <button class=\"btn btn-print\" onclick=\"window.print()\">🖨 인쇄</button>\n        </div>\n\n        <div class=\"report-title\" id=\"reportTitle\"></div>\n        <div class=\"table-scroll\">\n            <div id=\"tableWrap\"></div>\n        </div>\n    </div>\n\n    <div id=\"saveMsg\">✅ 저장되었습니다</div>\n\n    <script>\n        // ════════════════════════════════════════════\n        //  기본 데이터\n        // ════════════════════════════════════════════\n        const defaultGroups = [\n            {\n                dept: \"BAT\", cls: \"BAT\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"PMI\", cls: \"PMI\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"KT&G글로벌\", cls: \"KTG\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"엘리자베스아덴\", cls: \"ELIZ\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n            {\n                dept: \"U+\", cls: \"UPLUS\", rows: [\n                    { status: \"\", owner: \"\", task: \"\", d1: [], d2: [] }\n                ]\n            },\n        ];\n\n        // 클래스 매핑 (dept 이름이 바뀌어도 색상 유지용)\n        const CLS_LIST = [\"BAT\", \"PMI\", \"KTG\", \"ELIZ\", \"UPLUS\"];\n\n        // ════════════════════════════════════════════\n        //  데이터 로드/저장\n        // ════════════════════════════════════════════\n        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }\n\n        let groups = (() => {\n            try {\n                const s = localStorage.getItem('weeklyReport');\n                return s ? JSON.parse(s) : deepClone(defaultGroups);\n            } catch (e) { return deepClone(defaultGroups); }\n        })();\n\n        function saveToStorage() {\n            localStorage.setItem('weeklyReport', JSON.stringify(groups));\n        }\n\n        function saveNow() {\n            saveToStorage();\n            const msg = document.getElementById('saveMsg');\n            msg.classList.add('show');\n            setTimeout(() => msg.classList.remove('show'), 1800);\n        }\n\n        function resetData() {\n            if (confirm('모든 내용을 초기 데이터로 되돌리겠습니까?\\n(저장된 내용이 삭제됩니다)')) {\n                localStorage.removeItem('weeklyReport');\n                groups = deepClone(defaultGroups);\n                render();\n            }\n        }\n\n        // ════════════════════════════════════════════\n        //  날짜 유틸\n        // ════════════════════════════════════════════\n        const DAY_KO = [\"월\", \"화\", \"수\", \"목\", \"금\", \"토\", \"일\"];\n        let baseMonday = getMonday(new Date());\n\n        function getMonday(d) {\n            const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;\n            const m = new Date(d); m.setDate(d.getDate() + diff); m.setHours(0, 0, 0, 0); return m;\n        }\n        function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }\n        function fmt(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }\n        function weekRange(m) { return `${fmt(m)}(월)~${fmt(addDays(m, 6))}(일)`; }\n\n\n        // ════════════════════════════════════════════\n        //  이벤트 핸들러\n        // ════════════════════════════════════════════\n        function toggleDate(gi, ri, week, day) {\n            const arr = week === 1 ? groups[gi].rows[ri].d1 : groups[gi].rows[ri].d2;\n            const idx = arr.indexOf(day);\n            if (idx >= 0) arr.splice(idx, 1); else arr.push(day);\n            saveToStorage();\n            renderOnly(); // 전체 재렌더 없이 ●만 업데이트\n        }\n\n        function cycleStatus(gi, ri) {\n            const s = ['완료', '진행중', '예정'];\n            const cur = groups[gi].rows[ri].status;\n            groups[gi].rows[ri].status = s[(s.indexOf(cur) + 1) % 3];\n            saveToStorage();\n            // 해당 셀만 업데이트\n            const el = document.getElementById(`st_${gi}_${ri}`);\n            if (el) {\n                const ns = groups[gi].rows[ri].status;\n                el.textContent = ns;\n                el.className = `status-cell ${ns === '완료' ? 'status-done' : ns === '진행중' ? 'status-ing' : 'status-plan'}`;\n            }\n        }\n\n        function updateTask(gi, ri, val) {\n            groups[gi].rows[ri].task = val;\n            autoFillRow(gi, ri); // 날짜 자동 파싱 후 적용\n        }\n\n        function updateOwner(gi, ri, val) {\n            // 같은 작성자 그룹(병합 블록) 전체 업데이트\n            const rows = groups[gi].rows;\n            // ri 기준으로 연속된 같은 값 블록의 시작 찾기\n            let start = ri;\n            while (start > 0 && (rows[start - 1].owner || \"\") === (rows[ri].owner || \"\")) start--;\n            let end = ri;\n            while (end < rows.length - 1 && (rows[end + 1].owner || \"\") === (rows[ri].owner || \"\")) end++;\n            for (let k = start; k <= end; k++) rows[k].owner = val;\n            saveToStorage();\n            render();\n        }\n\n        function updateDept(gi, val) {\n            groups[gi].dept = val;\n            saveToStorage();\n        }\n\n        function addRow(gi) {\n            groups[gi].rows.push({ status: '예정', owner: '', task: '새 업무 입력', d1: [], d2: [] });\n            saveToStorage();\n            render();\n        }\n\n        function deleteRow(gi, ri) {\n            if (groups[gi].rows.length <= 1) { alert('최소 1개 행은 유지해야 합니다.'); return; }\n            if (confirm(`\"${groups[gi].rows[ri].task}\" 행을 삭제하시겠습니까?`)) {\n                groups[gi].rows.splice(ri, 1);\n                saveToStorage();\n                render();\n            }\n        }\n\n        // ● 셀만 빠르게 업데이트 (전체 재렌더 없이)\n        function renderOnly() {\n            const today = new Date(); today.setHours(0, 0, 0, 0);\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2Mon = addDays(baseMonday, 7);\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));\n            groups.forEach((g, gi) => {\n                g.rows.forEach((row, ri) => {\n                    [1, 2].forEach(week => {\n                        const dates = week === 1 ? w1 : w2;\n                        dates.forEach((_, di) => {\n                            const el = document.getElementById(`dc_${gi}_${ri}_${week}_${di}`);\n                            if (el) {\n                                const arr = week === 1 ? row.d1 : row.d2;\n                                el.textContent = arr.includes(di) ? '●' : '';\n                            }\n                        });\n                    });\n                });\n            });\n            // 오늘 박스 재스케줄\n            setTimeout(drawTodayBox, 20);\n        }\n\n        // ════════════════════════════════════════════\n        //  전체 렌더링\n        // ════════════════════════════════════════════\n        function render() {\n            const today = new Date(); today.setHours(0, 0, 0, 0);\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2Mon = addDays(baseMonday, 7);\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(w2Mon, i));\n\n            // 제목\n            document.getElementById('reportTitle').innerHTML =\n                `POSI DESIGN TEAM <span class=\"sub\">— 디자인 연구소 주간업무보고</span>` +\n                `<span class=\"week-badge\">1주: ${weekRange(baseMonday)} &nbsp;|&nbsp; 2주: ${weekRange(w2Mon)}</span>`;\n\n            // ── 헤더 ──\n            let h = `<table><thead>\n    <tr class=\"week-label\">\n      <th class=\"col-fixed\" colspan=\"5\"></th>\n      <th class=\"week1-lbl\" colspan=\"7\">📅 1주차 (${weekRange(baseMonday)})</th>\n      <th class=\"week2-lbl\" colspan=\"7\">📅 2주차 (${weekRange(w2Mon)})</th>\n    </tr>\n    <tr class=\"date-row\">\n      <th class=\"col-del\"></th>\n      <th class=\"col-dept\">부서</th>\n      <th class=\"col-owner\">작성자</th>\n      <th class=\"col-status\">구분</th>\n      <th class=\"col-task\">업무내용</th>`;\n\n            w1.forEach((d, i) => {\n                const wk = i >= 5, isTd = d.getTime() === today.getTime();\n                h += `<th class=\"${wk ? 'weekend' : ''} ${isTd ? 'today-th' : ''}\">${fmt(d)}<br>(${DAY_KO[i]})</th>`;\n            });\n            w2.forEach((d, i) => {\n                const wk = i >= 5, isTd = d.getTime() === today.getTime();\n                h += `<th class=\"${wk ? 'weekend' : ''} ${i === 0 ? 'w2-sep' : ''} ${isTd ? 'today-th' : ''}\">${fmt(d)}<br>(${DAY_KO[i]})</th>`;\n            });\n            h += `</tr></thead><tbody>`;\n\n            // ── 데이터 행 ──\n            // 구분 순서: 완료 → 진행중 → 예정 순으로 정렬 (저장 데이터는 그대로 유지)\n            const STATUS_ORDER = { '완료': 0, '진행중': 1, '예정': 2, '': 3 };\n\n            // ── 렌더 전 날짜 자동 매칭 (task 힌트 → d1/d2) ──\n            const _w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const _w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));\n            groups.forEach(group => {\n                group.rows.forEach(row => {\n                    if (row.status === '완료') {\n                        // 완료 업무: task에 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                    } else {\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, _w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, _w2);\n                        } else if (row.status === '진행중') {\n                            // 날짜 힌트 없는 진행중 → 해당 주 평일 전체\n                            row.d1 = [0, 1, 2, 3, 4];\n                            row.d2 = [0, 1, 2, 3, 4];\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                    }\n                });\n            });\n\n            groups.forEach((group, gi) => {\n                group.rows.sort((a, b) =>\n                    (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)\n                );\n                const rowCls = `dept-${CLS_LIST[gi] || group.cls}`;\n                const sCls = (s) => s === '완료' ? 'status-done' : s === '진행중' ? 'status-ing' : 'status-plan';\n\n                // 작성자 rowspan 계산: 연속된 같은 작성자 그룹화\n                const ownerSpans = [];\n                let ownerIdx = 0;\n                while (ownerIdx < group.rows.length) {\n                    const ownerVal = group.rows[ownerIdx].owner || \"\";\n                    let span = 1;\n                    while (ownerIdx + span < group.rows.length &&\n                        (group.rows[ownerIdx + span].owner || \"\") === ownerVal) {\n                        span++;\n                    }\n                    for (let k = 0; k < span; k++) ownerSpans.push(k === 0 ? span : 0);\n                    ownerIdx += span;\n                }\n\n                group.rows.forEach((row, ri) => {\n                    h += `<tr class=\"${rowCls}\">`;\n\n                    // 삭제 버튼\n                    h += `<td class=\"del-cell\"><button class=\"btn-del-row\" onclick=\"deleteRow(${gi},${ri})\" title=\"행 삭제\">✕</button></td>`;\n\n                    // 부서 (rowspan + contenteditable)\n                    if (ri === 0) {\n                        h += `<td class=\"dept-cell\" rowspan=\"${group.rows.length}\"\n          contenteditable=\"true\"\n          onblur=\"updateDept(${gi},this.textContent.trim())\"\n          title=\"클릭하여 부서명 편집\">${group.dept}</td>`;\n                    }\n\n                    // 작성자 (연속 같은 값 rowspan 병합)\n                    if (ownerSpans[ri] > 0) {\n                        h += `<td class=\"owner-cell\" rowspan=\"${ownerSpans[ri]}\"\n        contenteditable=\"true\"\n        onblur=\"updateOwner(${gi},${ri},this.textContent.trim())\"\n        title=\"클릭하여 작성자 편집\">${row.owner || \"\"}</td>`;\n                    }\n\n                    // 구분 (클릭으로 순환)\n                    h += `<td id=\"st_${gi}_${ri}\" class=\"status-cell ${sCls(row.status)}\"\n        onclick=\"cycleStatus(${gi},${ri})\" title=\"클릭하여 상태 변경\">${row.status}</td>`;\n\n                    // 업무내용 (contenteditable)\n                    h += `<td class=\"task-cell\" contenteditable=\"true\"\n        onblur=\"updateTask(${gi},${ri},this.textContent.trim())\"\n        title=\"클릭하여 업무내용 편집\">${row.task}</td>`;\n\n                    // 1주차 날짜\n                    w1.forEach((d, di) => {\n                        const wk = di >= 5, td = d.getTime() === today.getTime();\n                        const on = row.d1.includes(di);\n                        h += `<td id=\"dc_${gi}_${ri}_1_${di}\"\n          class=\"date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}\"\n          onclick=\"toggleDate(${gi},${ri},1,${di})\"\n          title=\"${fmt(d)} 클릭하여 토글\">${on ? '●' : ''}</td>`;\n                    });\n\n                    // 2주차 날짜\n                    w2.forEach((d, di) => {\n                        const wk = di >= 5, td = d.getTime() === today.getTime();\n                        const on = row.d2.includes(di);\n                        h += `<td id=\"dc_${gi}_${ri}_2_${di}\"\n          class=\"date-cell${wk ? ' weekend' : ''}${td ? ' today' : ''}${di === 0 ? ' w2-sep' : ''}\"\n          onclick=\"toggleDate(${gi},${ri},2,${di})\"\n          title=\"${fmt(d)} 클릭하여 토글\">${on ? '●' : ''}</td>`;\n                    });\n\n                    h += `</tr>`;\n                });\n\n                // 행 추가 버튼\n                h += `<tr class=\"add-row-tr ${rowCls}\"><td colspan=\"19\">\n      <button class=\"btn-add-row\" onclick=\"addRow(${gi})\">+ ${group.dept} 행 추가</button>\n    </td></tr>`;\n            });\n\n            h += `</tbody></table>`;\n            document.getElementById('tableWrap').innerHTML = h;\n            setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 20);\n        }\n\n        // ════════════════════════════════════════════\n        //  날짜 자동 파싱 & 채우기\n        // ════════════════════════════════════════════\n\n        /**\n         * 업무 텍스트에서 날짜 범위를 파싱합니다.\n         * 지원 패턴:\n         *   (3/12)         → 단일 날짜\n         *   (~3/15)        → 해당 날까지\n         *   (3/12~3/15)    → 날짜 범위\n         *   (3월) / (4월 중) → 해당 월 전체\n         */\n        function parseTaskDates(task) {\n            const Y = new Date().getFullYear();\n\n            // (M/D~M/D) 범위\n            let m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\s*~\\s*(\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) return { start: new Date(Y, +m[1] - 1, +m[2]), end: new Date(Y, +m[3] - 1, +m[4]) };\n\n            // (~M/D) 해당 날까지\n            m = task.match(/\\(~(\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) return { start: new Date(2000, 0, 1), end: new Date(Y, +m[1] - 1, +m[2]) };\n\n            // (M/D 완료) 또는 (M/D완료)\n            m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\s*완료\\)/);\n            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }\n\n            // (M/D) 단일 날짜\n            m = task.match(/\\((\\d{1,2})\\/(\\d{1,2})\\)/);\n            if (m) { const d = new Date(Y, +m[1] - 1, +m[2]); return { start: d, end: d }; }\n\n            // (M월 중순) / (M월 중) / (M월) 등\n            m = task.match(/\\((\\d{1,2})월(?:\\s*(?:초|중순|중|말))?\\)/);\n            if (m) {\n                const mo = +m[1] - 1;\n                return { start: new Date(Y, mo, 1), end: new Date(Y, mo + 1, 0) };\n            }\n\n            return null; // 날짜 없음\n        }\n\n        /**\n         * 주어진 날짜 범위에서 weekDates(7일) 중 해당하는 인덱스 반환\n         */\n        function getActiveIndices(start, end, weekDates) {\n            // 비교를 위해 시간 정규화\n            const s = new Date(start); s.setHours(0, 0, 0, 0);\n            const e = new Date(end); e.setHours(23, 59, 59, 0);\n            return weekDates.reduce((acc, d, i) => {\n                const dt = new Date(d); dt.setHours(12, 0, 0, 0);\n                if (dt >= s && dt <= e) acc.push(i);\n                return acc;\n            }, []);\n        }\n\n        /**\n         * 현재 표시 주차 계산\n         */\n        function getCurrentWeeks() {\n            const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));\n            const w2 = Array.from({ length: 7 }, (_, i) => addDays(addDays(baseMonday, 7), i));\n            return { w1, w2 };\n        }\n\n        /**\n         * 단일 행 날짜 자동 채우기 (업무내용 변경 시 호출)\n         */\n        function autoFillRow(gi, ri) {\n            const row = groups[gi].rows[ri];\n            const { w1, w2 } = getCurrentWeeks();\n\n            if (row.status === '완료') {\n                // 완료 → 완료일이 있으면 해당 날짜에 ●, 없으면 빈칸\n                const parsed = parseTaskDates(row.task);\n                if (parsed) {\n                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                } else {\n                    row.d1 = [];\n                    row.d2 = [];\n                }\n            } else {\n                const parsed = parseTaskDates(row.task);\n                if (parsed) {\n                    row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                    row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                } else if (row.status === '진행중') {\n                    // 날짜 명시 없는 진행중 → 평일 전체\n                    row.d1 = [0, 1, 2, 3, 4];\n                    row.d2 = [0, 1, 2, 3, 4];\n                }\n                // 날짜 없는 예정 → 변경 없음\n            }\n            saveToStorage();\n            renderOnly();\n        }\n\n        /**\n         * 전체 행 일괄 자동 채우기 버튼\n         */\n        function autoFillAllDates() {\n            const { w1, w2 } = getCurrentWeeks();\n            let count = 0;\n\n            groups.forEach(group => {\n                group.rows.forEach(row => {\n                    if (row.status === '완료') {\n                        // 완료 → 완료일이 있으면 해당 날짜에 ●\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                        } else {\n                            row.d1 = [];\n                            row.d2 = [];\n                        }\n                        count++;\n                    } else {\n                        const parsed = parseTaskDates(row.task);\n                        if (parsed) {\n                            row.d1 = getActiveIndices(parsed.start, parsed.end, w1);\n                            row.d2 = getActiveIndices(parsed.start, parsed.end, w2);\n                            count++;\n                        } else if (row.status === '진행중') {\n                            row.d1 = [0, 1, 2, 3, 4];\n                            row.d2 = [0, 1, 2, 3, 4];\n                            count++;\n                        }\n                        // 날짜 없는 예정 → 변경 없음\n                    }\n                });\n            });\n\n            saveToStorage();\n            renderOnly();\n\n            const msg = document.getElementById('saveMsg');\n            msg.textContent = `🔄 ${count}개 행 날짜 자동 채우기 완료!`;\n            msg.classList.add('show');\n            setTimeout(() => { msg.textContent = '✅ 저장되었습니다'; msg.classList.remove('show'); }, 2200);\n        }\n\n        // ════════════════════════════════════════════\n        //  오늘 열 하나의 큰 박스 오버레이\n        // ════════════════════════════════════════════\n        function drawTodayBox() {\n            // 기존 오버레이 제거\n            document.querySelectorAll('.today-col-overlay').forEach(el => el.remove());\n\n            const tableWrap = document.getElementById('tableWrap');\n            const scrollEl = document.querySelector('.table-scroll');\n            if (!tableWrap || !scrollEl) return;\n\n            tableWrap.style.position = 'relative';\n\n            // 날짜 엸 요소 가삸오기 (td.today + th.today-th)\n            const cells = tableWrap.querySelectorAll('.today, .today-th');\n            if (cells.length === 0) return;\n\n            const wrapRect = tableWrap.getBoundingClientRect();\n            const scrollLeft = scrollEl.scrollLeft;\n\n            // x좌표바로 그룹화 (같은 열)\n            const colMap = {};\n            cells.forEach(el => {\n                const r = el.getBoundingClientRect();\n                const xKey = Math.round(r.left);\n                if (!colMap[xKey]) colMap[xKey] = [];\n                colMap[xKey].push(r);\n            });\n\n            Object.values(colMap).forEach(rects => {\n                const table = tableWrap.querySelector('table');\n                const tableRect = table.getBoundingClientRect();\n\n                const top = Math.min(...rects.map(r => r.top)) - wrapRect.top;\n                // 테이블의 실제 바닥까지 박스를 확장\n                const bottom = tableRect.bottom - wrapRect.top;\n                const left = Math.min(...rects.map(r => r.left)) - wrapRect.left + scrollLeft;\n                const width = Math.max(...rects.map(r => r.width));\n\n                const box = document.createElement('div');\n                box.className = 'today-col-overlay';\n                box.style.top = `${top}px`;\n                box.style.left = `${left}px`;\n                box.style.width = `${width}px`;\n                box.style.height = `${bottom - top}px`;\n                tableWrap.appendChild(box);\n            });\n        }\n\n        // ════════════════════════════════════════════\n        //  1주/2주 경계 세로선 오버레이 (영역 끝까지)\n        // ════════════════════════════════════════════\n        function drawW2SepLine() {\n            document.querySelectorAll('.w2-sep-overlay').forEach(el => el.remove());\n\n            const tableWrap = document.getElementById('tableWrap');\n            const scrollEl = document.querySelector('.table-scroll');\n            if (!tableWrap || !scrollEl) return;\n\n            // w2-sep 클래스 셀 중 첫 번째 데이터 셀 기준으로 x 위치 파악\n            const sepCell = tableWrap.querySelector('td.w2-sep, th.w2-sep');\n            if (!sepCell) return;\n\n            const table = tableWrap.querySelector('table');\n            const wrapRect = tableWrap.getBoundingClientRect();\n            const tableRect = table.getBoundingClientRect();\n            const cellRect = sepCell.getBoundingClientRect();\n\n            const left = cellRect.left - wrapRect.left + scrollEl.scrollLeft - 1;\n            const top = 0;\n            const height = tableRect.bottom - wrapRect.top;\n\n            const line = document.createElement('div');\n            line.className = 'w2-sep-overlay';\n            line.style.cssText = `\n                position: absolute;\n                top: ${top}px;\n                left: ${left}px;\n                width: 1px;\n                height: ${height}px;\n                background: #2d5f9e;\n                pointer-events: none;\n                z-index: 10;\n            `;\n            tableWrap.appendChild(line);\n        }\n\n        // 스크롤·리사이즈 시 재계산\n        document.querySelector('.table-scroll').addEventListener('scroll', () => { drawTodayBox(); drawW2SepLine(); });\n        window.addEventListener('resize', () => { drawTodayBox(); drawW2SepLine(); });\n\n        render();\n        // 렌더링 후 DOM 반영 대기\n        setTimeout(() => { drawTodayBox(); drawW2SepLine(); }, 50);\n    <\\/script>\n</body>\n\n</html>";
+
+
+function getWeekInfo(date = getNow()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const monday = new Date(date);
+  const localDay = monday.getDay() || 7;
+  monday.setDate(monday.getDate() - (localDay - 1));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const label = `${d.getUTCFullYear()}년 ${weekNo}주차 (${String(monday.getMonth() + 1).padStart(2, '0')}.${String(monday.getDate()).padStart(2, '0')}~${String(sunday.getMonth() + 1).padStart(2, '0')}.${String(sunday.getDate()).padStart(2, '0')})`;
+  const key = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  return { label, key, weekNo, year: d.getUTCFullYear(), monday, sunday };
+}
+
+function getCurrentWeekLabel() {
+  return settings.weekLabel || getWeekInfo().label;
+}
+
+function getCurrentWeekKey() {
+  return (settings.weekLabel && settings.weekLabel.trim())
+    ? settings.weekLabel.trim().replace(/\s+/g, '-').replace(/[^0-9A-Za-z가-힣_.~-]/g, '_')
+    : getWeekInfo().key;
+}
+
+function normalizeFbUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function fbReady() {
+  return /^https:\/\//i.test(normalizeFbUrl(settings.fbUrl));
+}
+
+function fbTeamKey(team) {
+  return String(team || '').trim().replace(/[^0-9A-Za-z가-힣_-]/g, '_');
+}
+
+function capMessages(roomId) {
+  if (messages[roomId] && messages[roomId].length > MESSAGE_LIMIT) {
+    messages[roomId] = messages[roomId].slice(-MESSAGE_LIMIT);
+  }
+}
+
+function addMsg(roomId, role, content, name = 'SYSTEM', avatarColor = '#888', bubbleClass = '') {
+  if (!messages[roomId]) messages[roomId] = [];
+  messages[roomId].push({
+    role,
+    content,
+    time: formatTime(),
+    name,
+    avatarColor,
+    bubbleClass
+  });
+  capMessages(roomId);
+  if (currentRoom === roomId) renderMessages();
+}
+
+function addSystemMsg(roomId, content) {
+  addMsg(roomId, 'system', content, 'SYSTEM', '#888', 'system');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      settings = { ...settings, ...saved };
+    }
+  } catch (error) {
+    console.warn('settings load failed', error);
+  }
+
+  if (!settings.weekLabel) settings.weekLabel = getWeekInfo().label;
+  if (!Array.isArray(settings.teams) || !settings.teams.length) {
+    settings.teams = ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'];
+  }
+  settings.fbUrl = normalizeFbUrl(settings.fbUrl);
+
+  const apiEl = document.getElementById('apiKeyInput');
+  const fbEl = document.getElementById('fbUrlInput');
+  const teamsEl = document.getElementById('teamsInput');
+  const weekEl = document.getElementById('weekLabel');
+  if (apiEl) apiEl.value = settings.apiKey || '';
+  if (fbEl) fbEl.value = settings.fbUrl || '';
+  if (teamsEl) teamsEl.value = settings.teams.join(',');
+  if (weekEl) weekEl.value = settings.weekLabel || getWeekInfo().label;
+}
+
+function persistSettings() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function autoSaveApiKey(val) {
+  settings.apiKey = String(val || '').trim();
+  persistSettings();
+}
+
+function saveSettings() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const fbUrl = normalizeFbUrl(document.getElementById('fbUrlInput').value);
+  const teams = document.getElementById('teamsInput').value
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+  const weekLabelInput = document.getElementById('weekLabel').value.trim();
+
+  settings.apiKey = apiKey;
+  settings.fbUrl = fbUrl;
+  settings.teams = teams.length ? teams : ['BAT', 'PMI', 'KT&G글로벌', '엘리자베스아덴', 'U+'];
+  settings.weekLabel = weekLabelInput || getWeekInfo().label;
+
+  persistSettings();
+  initRooms();
+  closeModal('settingsModal');
+  toast('✅ 설정이 저장되었습니다');
+  loadReportsOnStart();
+}
+
+function initRooms() {
+  settings.teams.forEach(team => {
+    if (!messages[team]) messages[team] = [];
+  });
+  if (!messages.collect) messages.collect = [];
+
+  ['submitTeam', 'submitTeam2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<option value="">팀을 선택하세요</option>';
+    settings.teams.forEach(team => {
+      const option = document.createElement('option');
+      option.value = team;
+      option.textContent = team;
+      el.appendChild(option);
+    });
+  });
+
+  renderSidebar();
+}
+
+function roomColor(roomId) {
+  return TEAM_COLORS[roomId] || '#4b5563';
+}
+
+function roomAbbr(roomId) {
+  return TEAM_ABBR[roomId] || String(roomId || '?').slice(0, 3).toUpperCase();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = settings.teams.map(team => {
+    const report = reports[team];
+    const hasReport = !!report;
+    const roomMsgs = messages[team] || [];
+    const last = roomMsgs.length ? roomMsgs[roomMsgs.length - 1].content : '보고서 대기중';
+    return `
+      <div class="room-item ${hasReport ? 'done' : ''} ${currentRoom === team ? 'active' : ''}" onclick="switchRoom('${escapeHtml(team)}')">
+        <div class="room-avatar" style="background:${roomColor(team)}">${escapeHtml(roomAbbr(team))}</div>
+        <div class="room-info">
+          <div class="room-name">${escapeHtml(team)} 팀</div>
+          <div class="room-last">${escapeHtml(String(last).replace(/\n/g, ' ').slice(0, 40))}</div>
+        </div>
+        ${hasReport ? '<span class="room-badge done">✓</span>' : '<span class="room-badge">대기</span>'}
+      </div>
+    `;
+  }).join('');
+}
+
+function switchRoom(roomId) {
+  currentRoom = roomId;
+  const isCollect = roomId === 'collect';
+  document.getElementById('chatAvatar').style.background = roomColor(roomId);
+  document.getElementById('chatAvatar').textContent = roomAbbr(roomId);
+  document.getElementById('chatName').textContent = isCollect ? 'AI 취합방' : `${roomId} 팀 보고방`;
+  document.getElementById('chatSub').textContent = isCollect
+    ? `전체 취합 · 주차 ${getCurrentWeekLabel()}`
+    : `${roomId} 팀 보고서 제출 및 확인`;
+  renderSidebar();
+  renderMessages();
+}
+
+function renderMessages() {
+  const el = document.getElementById('messages');
+  const roomMsgs = messages[currentRoom] || [];
+  el.innerHTML = roomMsgs.map(msg => {
+    if (msg.role === 'system') {
+      return `
+        <div style="display:flex;justify-content:center;">
+          <div class="msg-bubble system" style="max-width:80%;text-align:left;">${nl2br(msg.content)}</div>
+        </div>
+      `;
+    }
+    const self = msg.role === 'user';
+    return `
+      <div class="msg-wrap ${self ? 'self' : ''}">
+        <div class="msg-avatar" style="background:${msg.avatarColor}">${escapeHtml((msg.name || '?').slice(0, 1))}</div>
+        <div class="msg-content">
+          <div class="msg-name">${escapeHtml(msg.name)} · ${escapeHtml(msg.time)}</div>
+          <div class="msg-bubble ${msg.bubbleClass || ''}">${nl2br(msg.content)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const value = input.value.trim();
+  if (!value) return;
+  input.value = '';
+  addMsg(currentRoom, 'user', value, '나', '#1e3a5f');
+  setTimeout(() => {
+    addMsg(currentRoom, 'assistant', '📌 보고서 제출은 [보고서 제출] 버튼을 사용하세요. 자유 형식으로 입력하면 Gemini가 업무 행으로 정리합니다.', '🤖 AI', '#2d5f9e', 'ai-result');
+  }, 300);
+}
+
+document.getElementById('chatInput').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+function openSubmitModal() {
+  document.getElementById('submitModal').classList.add('open');
+}
+
+function openSettings() {
+  document.getElementById('apiKeyInput').value = settings.apiKey || '';
+  document.getElementById('fbUrlInput').value = settings.fbUrl || '';
+  document.getElementById('teamsInput').value = settings.teams.join(',');
+  document.getElementById('weekLabel').value = settings.weekLabel || getWeekInfo().label;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function openPreview() {
+  const html = buildStandaloneReportHTML();
+  updatedReportHTML = html;
+  if (!html) {
+    alert('미리볼 보고서가 없습니다. 먼저 팀 보고서를 제출하거나 취합해 주세요.');
+    return;
+  }
+  document.getElementById('previewFrame').srcdoc = html;
+  document.getElementById('previewModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function switchTab(tabId) {
+  ['tabText', 'tabStructured'].forEach(id => {
+    document.getElementById(id).style.display = (id === tabId) ? '' : 'none';
+  });
+  ['tabTextBtn', 'tabStructuredBtn'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === `${tabId}Btn`);
+  });
+}
+
+function normalizeRow(row, leader = '') {
+  const statusRaw = String(row.status || '').trim();
+  let status = '진행중';
+  if (/완|done/i.test(statusRaw)) status = '완료';
+  else if (/예정|plan|todo/i.test(statusRaw)) status = '예정';
+  else if (/진행|ing|progress/i.test(statusRaw)) status = '진행중';
+
+  return {
+    status,
+    task: String(row.task || '').trim(),
+    owner: String(row.owner || leader || '').trim(),
+    d1: Array.isArray(row.d1) ? row.d1 : [],
+    d2: Array.isArray(row.d2) ? row.d2 : []
+  };
+}
+
+function fallbackParseReport(text, defaultLeader = '') {
+  return text
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      let status = '진행중';
+      if (/^\[?완료\]?/.test(line) || /완료/.test(line)) status = '완료';
+      else if (/^\[?예정\]?/.test(line) || /예정/.test(line)) status = '예정';
+      else if (/^\[?진행중\]?/.test(line) || /진행/.test(line)) status = '진행중';
+
+      const ownerMatch = line.match(/[-–—]\s*([^\-–—\[\]()]+)$/);
+      const owner = ownerMatch ? ownerMatch[1].trim() : defaultLeader;
+      const task = line
+        .replace(/^\[(완료|진행중|예정)\]\s*/g, '')
+        .replace(/^(완료|진행중|예정)\s*/g, '')
+        .replace(/[-–—]\s*([^\-–—\[\]()]+)$/g, '')
+        .trim();
+      return normalizeRow({ status, task, owner }, defaultLeader);
+    })
+    .filter(row => row.task);
+}
+
+async function callGemini(prompt) {
+  if (!settings.apiKey) {
+    throw new Error('Gemini API 키가 설정되지 않았습니다. 설정에서 API 키를 먼저 입력해 주세요.');
+  }
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(settings.apiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: 'text/plain'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(`Gemini 호출 실패 (${response.status}) ${errText.slice(0, 180)}`);
+  }
+
+  const data = await response.json();
+  return data?.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('')?.trim() || '';
+}
+
+function extractFirstJsonBlock(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) return arrayMatch[0];
+  const objectMatch = text.match(/\{[\s\S]*\}/);
+  if (objectMatch) return objectMatch[0];
+  return text.trim();
+}
+
+async function callGeminiParseReport(text, team, leader = '') {
+  const prompt = `당신은 주간업무보고서를 구조화하는 도우미입니다.\n\n팀명: ${team}\n입력 텍스트:\n"""\n${text}\n"""\n\n반드시 JSON 배열만 출력하세요. 각 항목 스키마는 아래와 같습니다.\n[\n  {\n    "status": "완료 또는 진행중 또는 예정",\n    "task": "업무 내용",\n    "owner": "담당자 이름, 없으면 빈 문자열",\n    "d1": [],\n    "d2": []\n  }\n]\n\n규칙:\n- 날짜 힌트가 있으면 task에 유지\n- status는 세 가지 중 하나만 사용\n- 설명 문장 없이 JSON만 출력`;
+
+  const raw = await callGemini(prompt);
+  const jsonText = extractFirstJsonBlock(raw);
+  const parsed = JSON.parse(jsonText);
+  if (!Array.isArray(parsed)) throw new Error('Gemini 응답이 배열이 아닙니다.');
+  const rows = parsed.map(row => normalizeRow(row, leader)).filter(row => row.task);
+  if (!rows.length) throw new Error('파싱된 업무가 없습니다.');
+  return rows;
+}
+
+
+function normalizeTaskText(task) {
+  return String(task || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[\[\]\(\){}.,/#!$%^&*;:{}=\_`~?<>|+-]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function statusRank(status) {
+  if (status === '완료') return 3;
+  if (status === '진행중') return 2;
+  if (status === '예정') return 1;
+  return 0;
+}
+
+function dedupeRows(rows) {
+  const map = new Map();
+  (rows || []).forEach(raw => {
+    const row = {
+      status: raw?.status || '',
+      task: raw?.task || '',
+      owner: raw?.owner || '',
+      d1: Array.isArray(raw?.d1) ? [...new Set(raw.d1)] : [],
+      d2: Array.isArray(raw?.d2) ? [...new Set(raw.d2)] : []
+    };
+    const key = normalizeTaskText(row.task);
+    if (!key) return;
+    if (!map.has(key)) {
+      map.set(key, row);
+      return;
+    }
+    const prev = map.get(key);
+    const merged = {
+      ...prev,
+      status: statusRank(row.status) > statusRank(prev.status) ? row.status : prev.status,
+      owner: prev.owner || row.owner,
+      d1: [...new Set([...(prev.d1 || []), ...(row.d1 || [])])].sort((a,b)=>a-b),
+      d2: [...new Set([...(prev.d2 || []), ...(row.d2 || [])])].sort((a,b)=>a-b)
+    };
+    if ((row.task || '').length > (prev.task || '').length) merged.task = row.task;
+    map.set(key, merged);
+  });
+  return Array.from(map.values());
+}
+
+function getDedupedReports() {
+  const result = {};
+  Object.entries(reports || {}).forEach(([team, report]) => {
+    result[team] = {
+      ...report,
+      rows: dedupeRows(report?.rows || [])
+    };
+  });
+  return result;
+}
+
+async function callGeminiCollectSummary() {
+  const dedupedReports = getDedupedReports();
+  const payload = Object.entries(dedupedReports).map(([team, report]) => ({
+    team,
+    leader: report.leader,
+    rows: report.rows
+  }));
+
+  const prompt = `당신은 여러 팀의 주간업무보고를 취합하는 PM 보조입니다.\n다음 JSON 데이터를 읽고 전체 보고용 JSON만 출력하세요.\n\n${JSON.stringify(payload, null, 2)}\n\n반드시 아래 스키마의 JSON 객체만 응답하세요.\n{\n  "overview": ["문장1", "문장2"],\n  "teamHighlights": [\n    {"team":"BAT","summary":"핵심 내용 1~2문장"}\n  ],\n  "issues": ["없으면 빈 배열"],\n  "stats": {"completed": 0, "inProgress": 0, "planned": 0, "total": 0}\n}`;
+
+  const raw = await callGemini(prompt);
+  const jsonText = extractFirstJsonBlock(raw);
+  const parsed = JSON.parse(jsonText);
+  return {
+    overview: Array.isArray(parsed.overview) ? parsed.overview : [],
+    teamHighlights: Array.isArray(parsed.teamHighlights) ? parsed.teamHighlights : [],
+    issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+    stats: parsed.stats || computeStats()
+  };
+}
+
+function computeStats() {
+  const stats = { completed: 0, inProgress: 0, planned: 0, total: 0 };
+  Object.values(getDedupedReports()).forEach(report => {
+    (report.rows || []).forEach(row => {
+      stats.total += 1;
+      if (row.status === '완료') stats.completed += 1;
+      else if (row.status === '예정') stats.planned += 1;
+      else stats.inProgress += 1;
+    });
+  });
+  return stats;
+}
+
+function buildFallbackSummary() {
+  const stats = computeStats();
+  const dedupedReports = getDedupedReports();
+  return {
+    overview: [
+      `총 ${Object.keys(dedupedReports).length}개 팀의 보고서를 기준으로 주간 보고서를 취합했습니다.`,
+      `중복 업무를 제거한 기준으로 전체 업무 ${stats.total}건 중 완료 ${stats.completed}건, 진행중 ${stats.inProgress}건, 예정 ${stats.planned}건입니다.`
+    ],
+    teamHighlights: Object.entries(dedupedReports).map(([team, report]) => {
+      const topRows = (report.rows || []).slice(0, 2).map(row => `[${row.status}] ${row.task}`).join(' / ');
+      return {
+        team,
+        summary: topRows || '제출된 업무가 없습니다.'
+      };
+    }),
+    issues: [],
+    stats
+  };
+}
+
+function updateParsedPreview(rows) {
+  const previewWrap = document.getElementById('parsedPreview');
+  const preview = document.getElementById('parsedContent');
+  previewWrap.style.display = '';
+  preview.textContent = rows.map(row => `[${row.status}] ${row.task} — ${row.owner || '미지정'}`).join('\n');
+}
+
+async function parseTextReport() {
+  const team = document.getElementById('submitTeam').value;
+  const leader = document.getElementById('submitLeader').value.trim();
+  const content = document.getElementById('submitContent').value.trim();
+  if (!team) return alert('팀을 선택해 주세요.');
+  if (!content) return alert('보고 내용을 입력해 주세요.');
+
+  document.getElementById('parsedPreview').style.display = '';
+  document.getElementById('parsedContent').textContent = '⏳ Gemini가 파싱 중입니다...';
+
+  try {
+    const rows = await callGeminiParseReport(content, team, leader);
+    updateParsedPreview(rows);
+  } catch (error) {
+    const fallback = fallbackParseReport(content, leader);
+    if (fallback.length) {
+      updateParsedPreview(fallback);
+      document.getElementById('parsedContent').textContent += '\n\n※ Gemini 파싱 실패로 기본 규칙 파서를 사용했습니다.';
+    } else {
+      document.getElementById('parsedContent').textContent = `❌ 파싱 오류: ${error.message}`;
+    }
+  }
+}
+
+function addRowItem() {
+  parsedRows.push({ status: '진행중', task: '', owner: '' });
+  renderRowList();
+}
+
+function deleteRowItem(index) {
+  parsedRows.splice(index, 1);
+  renderRowList();
+}
+
+function renderRowList() {
+  const el = document.getElementById('rowList');
+  el.innerHTML = parsedRows.map((row, index) => `
+    <div class="row-item">
+      <select class="form-select" style="width:90px;padding:4px 6px;font-size:11px;" onchange="parsedRows[${index}].status=this.value">
+        <option ${row.status === '완료' ? 'selected' : ''}>완료</option>
+        <option ${row.status === '진행중' ? 'selected' : ''}>진행중</option>
+        <option ${row.status === '예정' ? 'selected' : ''}>예정</option>
+      </select>
+      <input type="text" class="form-input" style="flex:1;padding:5px 8px;font-size:11.5px;" placeholder="업무내용" value="${escapeHtml(row.task)}" oninput="parsedRows[${index}].task=this.value">
+      <input type="text" class="form-input" style="width:90px;padding:5px 8px;font-size:11px;" placeholder="담당자" value="${escapeHtml(row.owner)}" oninput="parsedRows[${index}].owner=this.value">
+      <button class="row-del-btn" onclick="deleteRowItem(${index})">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitReport() {
+  const isTextTab = document.getElementById('tabText').style.display !== 'none';
+  const team = document.getElementById(isTextTab ? 'submitTeam' : 'submitTeam2').value;
+  const leader = document.getElementById('submitLeader').value.trim() || '팀장';
+  if (!team) return alert('팀을 선택해 주세요.');
+
+  let rows = [];
+  let rawText = '';
+
+  if (isTextTab) {
+    rawText = document.getElementById('submitContent').value.trim();
+    if (!rawText) return alert('보고 내용을 입력해 주세요.');
+
+    closeModal('submitModal');
+    addMsg(team, 'user', `[주간보고서 제출]\n${rawText}`, leader, roomColor(team), 'report-paste');
+    addSystemMsg(team, '⏳ Gemini로 보고서를 구조화하는 중입니다...');
+
+    try {
+      rows = await callGeminiParseReport(rawText, team, leader);
+    } catch (error) {
+      rows = fallbackParseReport(rawText, leader);
+      if (!rows.length) {
+        addSystemMsg(team, `❌ 파싱 실패: ${error.message}`);
+        return;
+      }
+      addSystemMsg(team, '⚠️ Gemini 파싱에 실패하여 기본 규칙 파서를 사용했습니다.');
+    }
+  } else {
+    rows = parsedRows.map(row => normalizeRow(row, leader)).filter(row => row.task);
+    if (!rows.length) return alert('업무 행을 1개 이상 입력해 주세요.');
+    rawText = rows.map(row => `[${row.status}] ${row.task} - ${row.owner || leader}`).join('\n');
+    closeModal('submitModal');
+    addMsg(team, 'user', `[구조화 보고서 제출]\n${rawText}`, leader, roomColor(team), 'report-paste');
+  }
+
+  const report = {
+    team,
+    leader,
+    rawText,
+    rows,
+    updatedAt: new Date().toISOString(),
+    weekLabel: getCurrentWeekLabel()
+  };
+  reports[team] = report;
+
+  addMsg(team, 'assistant', `✅ 보고서 접수 완료\n\n${rows.map(row => `• [${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n')}`, '🤖 AI', '#2d5f9e', 'ai-result');
+  addSystemMsg('collect', `📨 ${team} 팀 보고서 수신 완료 (${leader}, ${rows.length}건)`);
+
+  const saved = await fbSaveReport(team, report);
+  if (saved) addSystemMsg(team, '💾 Firebase 저장 완료 — 다른 팀원도 최신 보고서를 불러올 수 있습니다.');
+  else if (settings.fbUrl) addSystemMsg(team, '⚠️ Firebase 저장 실패 — DB URL 또는 보안 규칙을 확인해 주세요.');
+
+  parsedRows = [];
+  renderRowList();
+  renderSidebar();
+  renderRightPanel();
+  clearSubmitForm();
+  toast(`✅ ${team} 팀 보고서 제출 완료`);
+}
+
+function clearSubmitForm() {
+  document.getElementById('submitContent').value = '';
+  document.getElementById('parsedPreview').style.display = 'none';
+  document.getElementById('parsedContent').textContent = '';
+  document.getElementById('submitLeader').value = '';
+  document.getElementById('submitTeam').value = '';
+  document.getElementById('submitTeam2').value = '';
+}
+
+function fbPath(path) {
+  return `${normalizeFbUrl(settings.fbUrl)}${path}.json`;
+}
+
+async function fbPut(path, data) {
+  if (!fbReady()) return false;
+  try {
+    const response = await fetch(fbPath(path), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('fbPut failed', error);
+    return false;
+  }
+}
+
+async function fbGet(path) {
+  if (!fbReady()) return null;
+  try {
+    const response = await fetch(fbPath(path));
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.warn('fbGet failed', error);
+    return null;
+  }
+}
+
+async function fbSaveReport(team, report) {
+  if (!fbReady()) return false;
+  const weekKey = getCurrentWeekKey();
+  const teamKey = fbTeamKey(team);
+  return await fbPut(`/reports/${weekKey}/${teamKey}`, report);
+}
+
+async function fbLoadAllReports() {
+  if (!fbReady()) return {};
+  const weekKey = getCurrentWeekKey();
+  const data = await fbGet(`/reports/${weekKey}`);
+  if (!data || typeof data !== 'object') return {};
+  const result = {};
+  settings.teams.forEach(team => {
+    const key = fbTeamKey(team);
+    if (data[key]) result[team] = data[key];
+  });
+  return result;
+}
+
+async function fbSaveCollected(summaryObj, reportHtml) {
+  if (!fbReady()) return false;
+  const weekKey = getCurrentWeekKey();
+  return await fbPut(`/collected/${weekKey}`, {
+    weekLabel: getCurrentWeekLabel(),
+    summary: summaryObj,
+    html: reportHtml,
+    templateVersion: 'weekly-report-v2',
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function fbLoadCollected() {
+  if (!fbReady()) return null;
+  return await fbGet(`/collected/${getCurrentWeekKey()}`);
+}
+
+async function fbLoadStatus() {
+  if (!fbReady()) {
+    addSystemMsg('collect', '⚠️ Firebase Database URL이 설정되지 않았습니다.');
+    return;
+  }
+
+  addSystemMsg('collect', '🔄 Firebase에서 현재 주차 보고서를 불러오는 중입니다...');
+  const loadedReports = await fbLoadAllReports();
+  reports = { ...reports, ...loadedReports };
+
+  const collected = await fbLoadCollected();
+  if (collected?.summary) collectedSummary = collected.summary;
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
+
+  renderSidebar();
+  renderRightPanel();
+  addSystemMsg('collect', `✅ ${Object.keys(loadedReports).length}개 팀 보고서를 로드했습니다.`);
+}
+
+async function loadReportsOnStart() {
+  if (!fbReady()) {
+    renderSidebar();
+    renderRightPanel();
+    return;
+  }
+
+  const loadedReports = await fbLoadAllReports();
+  reports = { ...loadedReports };
+  const collected = await fbLoadCollected();
+  if (collected?.summary) collectedSummary = collected.summary;
+  if (collected?.html && String(collected.html).includes('POSI DESIGN TEAM 주간업무보고')) updatedReportHTML = collected.html;
+  else updatedReportHTML = buildStandaloneReportHTML();
+  renderSidebar();
+  renderRightPanel();
+}
+
+function addLoadingMsg() {
+  const wrap = document.createElement('div');
+  wrap.id = 'loadingMsg';
+  wrap.style.cssText = 'display:flex;justify-content:center;padding:8px;';
+  wrap.innerHTML = '<div class="msg-bubble system"><div class="loading-dots"><span></span><span></span><span></span></div> AI 취합 중...</div>';
+  document.getElementById('messages').appendChild(wrap);
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+  return 'loadingMsg';
+}
+
+function removeLoadingMsg() {
+  const loading = document.getElementById('loadingMsg');
+  if (loading) loading.remove();
+}
+
+async function runCollectAll() {
+  if (fbReady()) {
+    const latest = await fbLoadAllReports();
+    reports = { ...reports, ...latest };
+  }
+
+  const receivedTeams = Object.keys(reports);
+  if (!receivedTeams.length) {
+    alert('아직 제출된 팀 보고서가 없습니다.');
+    return;
+  }
+  if (!settings.apiKey) {
+    alert('설정에서 Gemini API 키를 입력해 주세요.');
+    return;
+  }
+
+  switchRoom('collect');
+  addSystemMsg('collect', `⚡ ${receivedTeams.length}개 팀 보고서 취합을 시작합니다...`);
+  const loadingId = addLoadingMsg();
+
+  try {
+    collectedSummary = await callGeminiCollectSummary();
+  } catch (error) {
+    console.warn(error);
+    collectedSummary = buildFallbackSummary();
+    addSystemMsg('collect', `⚠️ Gemini 취합 실패로 기본 취합 결과를 생성했습니다. (${error.message})`);
+  } finally {
+    removeLoadingMsg(loadingId);
+  }
+
+  updatedReportHTML = buildStandaloneReportHTML();
+  await fbSaveCollected(collectedSummary, updatedReportHTML);
+
+  addMsg('collect', 'assistant', buildCollectChatText(collectedSummary), '🤖 AI 취합', '#1e3a5f', 'ai-result');
+  addSystemMsg('collect', '✅ 취합 완료 — 미리보기 또는 HTML 다운로드가 가능합니다.');
+  renderRightPanel();
+  toast('✅ 전체 취합 완료');
+}
+
+function buildCollectChatText(summaryObj) {
+  const stats = summaryObj?.stats || computeStats();
+  const overview = (summaryObj?.overview || []).map(line => `• ${line}`).join('\n');
+  const teamLines = (summaryObj?.teamHighlights || []).map(item => `• ${item.team}: ${item.summary}`).join('\n');
+  const issues = (summaryObj?.issues || []).length
+    ? (summaryObj.issues || []).map(line => `• ${line}`).join('\n')
+    : '• 특이 이슈 없음';
+
+  return [
+    `📅 ${getCurrentWeekLabel()}`,
+    '',
+    '[전체 요약]',
+    overview || '• 요약 없음',
+    '',
+    '[팀별 현황]',
+    teamLines || '• 팀별 요약 없음',
+    '',
+    '[이슈/주의사항]',
+    issues,
+    '',
+    `[통계] 완료 ${stats.completed} / 진행중 ${stats.inProgress} / 예정 ${stats.planned} / 총 ${stats.total}`
+  ].join('\n');
+}
+
+
+function getWeeklyTemplateClass(team, index = 0) {
+  const map = {
+    'BAT': 'BAT',
+    'PMI': 'PMI',
+    'KT&G글로벌': 'KTG',
+    '엘리자베스아덴': 'ELIZ',
+    'U+': 'UPLUS'
+  };
+  return map[team] || ['BAT', 'PMI', 'KTG', 'ELIZ', 'UPLUS'][index % 5];
+}
+
+function buildWeeklyTemplateGroups() {
+  const dedupedReports = getDedupedReports();
+  return settings.teams.map((team, index) => {
+    const report = dedupedReports[team];
+    const rows = (report && Array.isArray(report.rows) && report.rows.length)
+      ? report.rows.map(row => ({
+          status: row.status || '',
+          owner: row.owner || report.leader || '',
+          task: row.task || '',
+          d1: Array.isArray(row.d1) ? row.d1 : [],
+          d2: Array.isArray(row.d2) ? row.d2 : []
+        }))
+      : [{ status: '', owner: '', task: '', d1: [], d2: [] }];
+
+    return {
+      dept: team,
+      cls: getWeeklyTemplateClass(team, index),
+      rows
+    };
+  });
+}
+
+function buildWeeklySummaryBlock() {
+  const summaryObj = collectedSummary || buildFallbackSummary();
+  const stats = summaryObj.stats || computeStats();
+  const overview = (summaryObj.overview || []).slice(0, 4).map(line => `<li>${escapeHtml(line)}</li>`).join('') || '<li>요약 없음</li>';
+  const issues = (summaryObj.issues || []).slice(0, 3).map(line => `<li>${escapeHtml(line)}</li>`).join('') || '<li>특이 이슈 없음</li>';
+
+  return `
+  <div style="padding:12px 14px;border-bottom:1px solid #dde2ea;background:#f6f8fc;">
+    <div style="display:grid;grid-template-columns:1.6fr repeat(4,minmax(90px,1fr));gap:10px;align-items:stretch;">
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:6px;">AI 취합 요약</div>
+        <div style="font-size:11px;color:#5b6577;margin-bottom:8px;">${escapeHtml(getCurrentWeekLabel())}</div>
+        <ul style="margin:0;padding-left:18px;font-size:11px;line-height:1.65;color:#222;">${overview}</ul>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #dde2ea;font-size:10.5px;color:#8a5a00;">${issues}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">완료</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.completed}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">진행중</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.inProgress}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">예정</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.planned}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dde2ea;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:#6b7280;">총 업무</div>
+        <div style="font-size:24px;font-weight:800;color:#1e3a5f;margin-top:6px;">${stats.total}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildStandaloneReportHTML() {
+  const monday = getWeekInfo().monday;
+  const storageKey = `weeklyReport_${getCurrentWeekKey()}`;
+  let html = WEEKLY_REPORT_TEMPLATE;
+
+  const groupsJson = JSON.stringify(buildWeeklyTemplateGroups(), null, 2);
+
+  html = html.replace(new RegExp("const defaultGroups = \\[\\s\\S]*?\\n        \\];"), `const defaultGroups = ${groupsJson};`);
+  html = html.replace(new RegExp("let groups = \\(\\(\\) => \\{[\\s\\S]*?\\}\\)\\(\\);"), `let groups = deepClone(defaultGroups);`);
+  html = html.replace(/localStorage\.getItem\('weeklyReport'\)/g, `localStorage.getItem('${storageKey}')`);
+  html = html.replace(/localStorage\.setItem\('weeklyReport', JSON\.stringify\(groups\)\);/g, `localStorage.setItem('${storageKey}', JSON.stringify(groups));`);
+  html = html.replace(/localStorage\.removeItem\('weeklyReport'\);/g, `localStorage.removeItem('${storageKey}');`);
+  html = html.replace(/let baseMonday = getMonday\(new Date\(\)\);/, `let baseMonday = new Date(${monday.getFullYear()}, ${monday.getMonth()}, ${monday.getDate()});`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>POSI DESIGN TEAM 주간업무보고 - ${escapeHtml(getCurrentWeekLabel())}</title>`);
+  html = html.replace(/<div class="report-title" id="reportTitle"><\/div>/, `<div class="report-title" id="reportTitle"></div>${buildWeeklySummaryBlock()}`);
+
+  return html;
+}
+
+
+function downloadReport() {
+  const html = buildStandaloneReportHTML();
+  updatedReportHTML = html;
+  if (!html) {
+    alert('다운로드할 보고서가 없습니다.');
+    return;
+  }
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `weekly-report-${getCurrentWeekKey()}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderRightPanel() {
+  const el = document.getElementById('rightPanel');
+  const total = settings.teams.length;
+  const done = Object.keys(reports).length;
+  const stats = (collectedSummary && collectedSummary.stats) ? collectedSummary.stats : computeStats();
+
+  let html = `
+    <div class="progress-section">
+      <div class="progress-title">팀별 제출 현황 (${done}/${total}) · ${escapeHtml(getCurrentWeekLabel())}</div>
+      <div class="team-progress">
+        ${settings.teams.map(team => {
+          const report = reports[team];
+          return `
+            <div class="team-row">
+              <div class="team-row-name">${escapeHtml(team)}</div>
+              <div class="team-row-bar"><div class="team-row-fill" style="width:${report ? 100 : 0}%;background:${roomColor(team)}"></div></div>
+              <div class="team-row-stat" style="color:${report ? '#27ae60' : '#aaa'}">${report ? '✓ 완료' : '대기'}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="ai-action-box">
+      <div class="ai-action-title">🤖 AI 에이전트 액션</div>
+      <div class="ai-action-btns">
+        <button class="btn btn-success" style="width:100%;font-size:12px;" onclick="runCollectAll()">⚡ 전체 취합 & HTML 생성</button>
+        <button class="btn btn-outline" style="width:100%;font-size:12px;" onclick="openPreview()">👁 보고서 미리보기</button>
+        <button class="btn btn-primary" style="width:100%;font-size:12px;" onclick="downloadReport()">⬇️ HTML 다운로드</button>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-card-header" style="background:#eef5ff;color:#1e3a5f;">📌 취합 통계 <span class="tag tag-done">${stats.total}건</span></div>
+      <div class="report-card-body">완료 ${stats.completed}건\n진행중 ${stats.inProgress}건\n예정 ${stats.planned}건</div>
+    </div>
+  `;
+
+  if (collectedSummary?.overview?.length) {
+    html += `
+      <div class="report-card">
+        <div class="report-card-header" style="background:#eef9f1;color:#1a5c2a;">🧠 AI 요약</div>
+        <div class="report-card-body">${escapeHtml(collectedSummary.overview.join('\n'))}</div>
+      </div>
+    `;
+  }
+
+  if (Object.keys(reports).length) {
+    html += '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:4px;">수신된 보고서</div>';
+    Object.entries(reports).forEach(([team, report]) => {
+      html += `
+        <div class="report-card">
+          <div class="report-card-header" style="background:${roomColor(team)}15;color:${roomColor(team)};">
+            <div style="width:24px;height:24px;border-radius:6px;background:${roomColor(team)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${escapeHtml(roomAbbr(team))}</div>
+            ${escapeHtml(team)} — ${escapeHtml(report.leader || '-')}
+            <span class="tag tag-done">${report.rows?.length || 0}건</span>
+          </div>
+          <div class="report-card-body">${escapeHtml((report.rows || []).map(row => `[${row.status}] ${row.task}${row.owner ? ' — ' + row.owner : ''}`).join('\n'))}</div>
+        </div>
+      `;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function refreshStatus() {
+  fbLoadStatus();
+}
+
+function init() {
+  loadSettings();
+  initRooms();
+  renderRowList();
+  switchRoom('collect');
+  renderRightPanel();
+
+  addSystemMsg('collect', [
+    '👋 POSI DESIGN 주간업무보고 AI 취합 허브입니다.',
+    '',
+    '1. 각 팀이 [보고서 제출]에서 내용을 입력합니다.',
+    '2. Gemini가 자유 형식 텍스트를 업무 행으로 파싱합니다.',
+    '3. [전체 취합 & HTML 생성]으로 주간 보고서를 만듭니다.',
+    '4. 보고서 HTML을 미리보기 또는 다운로드할 수 있습니다.',
+    '',
+    '※ Firebase Database URL을 입력하면 팀별 보고서와 취합 결과가 공유됩니다.'
+  ].join('\n'));
+
+  loadReportsOnStart();
+}
+
+init();
+</script>
+
+</body>
+</html>
