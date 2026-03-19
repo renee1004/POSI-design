@@ -517,23 +517,23 @@
         <div class="nav-sections">
             <div class="nav-label">Team Entries</div>
             <div class="nav-item active" onclick="switchView('bat')">
-                <div class="nav-dot dot-bat"></div>BAT
+                <div class="nav-dot dot-bat"></div>BAT 팀 보고방
             </div>
             <div class="nav-item" onclick="switchView('pmi')">
-                <div class="nav-dot dot-pmi"></div>PMI
+                <div class="nav-dot dot-pmi"></div>PMI 팀 보고방
             </div>
             <div class="nav-item" onclick="switchView('ktg')">
-                <div class="nav-dot dot-ktg"></div>KT&G
+                <div class="nav-dot dot-ktg"></div>KTG 팀 보고방
             </div>
             <div class="nav-item" onclick="switchView('eliz')">
-                <div class="nav-dot dot-eliz"></div>ELIZ
+                <div class="nav-dot dot-eliz"></div>ELIZ 팀 보고방
             </div>
             <div class="nav-item" onclick="switchView('uplus')">
-                <div class="nav-dot dot-uplus"></div>U+
+                <div class="nav-dot dot-uplus"></div>UPLUS 팀 보고방
             </div>
-            <div class="nav-label">Control Center</div>
+            <div class="nav-label">Report Control</div>
             <div class="nav-item" onclick="switchView('manager')">
-                <div class="nav-dot dot-mgr"></div>⚡ AI 취합 & 배포
+                <div class="nav-dot dot-mgr"></div>⚡ AI 취합방
             </div>
         </div>
     </div>
@@ -553,11 +553,24 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">📝 실시간 업무 보고 (Firebase 저장)</div>
-                        <div id="lastUpdateBadge" class="status-badge status-waiting">대기 중</div>
                     </div>
                     <div class="input-group">
-                        <textarea id="reportContent" class="textarea-premium"
-                            placeholder="이번 주 업무 내용을 자유롭게 입력하세요..."></textarea>
+                        <div style="display:flex; gap:12px; margin-bottom:12px;">
+                            <div style="flex:1;">
+                                <label
+                                    style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">작성자
+                                    (방장)</label>
+                                <input type="text" id="reportOwner" class="field-input" placeholder="이름 입력"
+                                    style="margin:0;">
+                            </div>
+                            <div style="flex:2;">
+                                <label
+                                    style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">상태</label>
+                                <span id="lastUpdateBadge" class="status-badge status-waiting">대기 중</span>
+                            </div>
+                        </div>
+                        <textarea id="reportContent" class="editor-area"
+                            placeholder="이번 주 업무 내용을 입력해 주세요..."></textarea>
                     </div>
                     <div class="action-bar">
                         <button class="btn-premium btn-primary" onclick="submitToFirebase()">☁️ Cloud 저장</button>
@@ -647,11 +660,11 @@
         // ── Initialization ──
         let currentTab = 'bat';
         const teams = {
-            bat: { name: 'BAT', fb: 'BAT' },
-            pmi: { name: 'PMI', fb: 'PMI' },
-            ktg: { name: 'KTG', fb: 'KTG' },
-            eliz: { name: 'ELIZ', fb: 'ELIZ' },
-            uplus: { name: 'UPLUS', fb: 'UPLUS' }
+            bat: { name: 'BAT 팀 보고방', dept: 'BAT', cls: 'BAT' },
+            pmi: { name: 'PMI 팀 보고방', dept: 'PMI', cls: 'PMI' },
+            ktg: { name: 'KTG 팀 보고방', dept: 'KT&G글로벌', cls: 'KTG' },
+            eliz: { name: 'ELIZ 팀 보고방', dept: '엘리자베스아덴', cls: 'ELIZ' },
+            uplus: { name: 'UPLUS 팀 보고방', dept: 'U+', cls: 'UPLUS' }
         };
 
         let db;
@@ -717,10 +730,12 @@
                 const doc = await db.collection('weekly_reports').doc(currentTab).get();
                 if (doc.exists) {
                     const data = doc.data();
+                    document.getElementById('reportOwner').value = data.owner || '';
                     document.getElementById('reportContent').value = data.content || '';
                     document.getElementById('lastUpdateBadge').textContent = '☁️ 연결됨';
                     document.getElementById('lastUpdateBadge').className = 'status-badge status-success';
                 } else {
+                    document.getElementById('reportOwner').value = '';
                     document.getElementById('reportContent').value = '';
                     document.getElementById('lastUpdateBadge').textContent = '데이터 없음';
                 }
@@ -729,13 +744,17 @@
 
         async function submitToFirebase() {
             if (!db) return showToast("Firebase 설정을 먼저 완료하세요", "error");
+            const owner = document.getElementById('reportOwner').value.trim();
             const content = document.getElementById('reportContent').value.trim();
             const badge = document.getElementById('lastUpdateBadge');
+
+            if (!owner) return showToast("작성자(방장) 이름을 입력해 주세요", "error");
 
             badge.textContent = '⏳ 저장 중...';
             try {
                 await db.collection('weekly_reports').doc(currentTab).set({
                     team: currentTab,
+                    owner: owner,
                     content: content,
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -757,13 +776,14 @@
 
                 tbody.innerHTML = '';
                 for (let key in teams) {
-                    const item = dataMap[key] || { content: '(미제출)', updated_at: null };
+                    const item = dataMap[key] || { content: '(미제출)', owner: '-', updated_at: null };
                     const row = document.createElement('tr');
                     const time = item.updated_at ? item.updated_at.toDate().toLocaleString() : '-';
                     row.innerHTML = `
-                        <td><span class="team-chip dot-${key}" style="background:rgba(255,255,255,0.1); border:1px solid var(--${key})">${teams[key].name}</span></td>
+                        <td><span class="team-chip dot-${key}" style="background:rgba(255,255,255,0.1); border:1px solid var(--${key})">${teams[key].dept}</span></td>
                         <td><span class="status-badge ${item.content === '(미제출)' ? 'status-waiting' : 'status-success'}">${item.content === '(미제출)' ? '대기' : '완료'}</span></td>
-                        <td style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${item.content}</td>
+                        <td>${item.owner}</td>
+                        <td style="max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${item.content}</td>
                         <td style="font-size:11px; color:var(--text-secondary)">${time}</td>
                     `;
                     tbody.appendChild(row);
@@ -808,8 +828,9 @@
                 let fullContext = "";
                 let count = 0;
                 snapshot.forEach(doc => {
-                    if (doc.data().content) {
-                        fullContext += `[Team: ${doc.id}]\n${doc.data().content}\n\n`;
+                    const data = doc.data();
+                    if (data.content) {
+                        fullContext += `[Team: ${doc.id}]\n[Owner: ${data.owner || 'Unknown'}]\n${data.content}\n\n`;
                         count++;
                     }
                 });
@@ -822,39 +843,40 @@
                 summaryBox.textContent = `🚀 ${count}개 부서 데이터를 성공적으로 수집했습니다. 분석 중...`;
                 setAiProgress(40);
 
-                // 2. Prepare Prompt
+                // 2. Prepare Prompt (With Date Hint Logic)
+                const today = new Date();
                 const prompt = `당신은 전문 PM입니다. 아래 팀 보고서를 분석하여 정확히 JSON만 출력하세요.
+현재 날짜: ${today.toISOString().split('T')[0]} (오늘 기준 1주차와 2주차 요일을 계산하세요)
 
-[팀 목록 - 반드시 이 순서, 이 cls 값 사용]
-1. BAT팀 → cls: "BAT", dept: "BAT"
-2. PMI팀 → cls: "PMI", dept: "PMI"  
-3. KT&G글로벌팀 → cls: "KTG", dept: "KT&G글로벌"
-4. 엘리자베스아덴팀 → cls: "ELIZ", dept: "엘리자베스아덴"
-5. U+팀 → cls: "UPLUS", dept: "U+"
+[기본 규칙]
+1. 팀 목록 및 순서 엄수: BAT -> PMI -> KT&G글로벌 -> 엘리자베스아덴 -> U+ (반드시 이 순서대로 모든 팀의 데이터를 생성하세요)
+2. 개별 업무 분리: 보고서 내용에서 각 개별 업무를 정밀하게 추출하여, 각각 별도의 행(row)으로 생성하세요. 절대 여러 업무를 한 행에 뭉뚱그려 넣지 마세요.
+3. 팀 컬러 매칭: 각 업무는 반드시 해당 팀의 섹션(BAT, PMI 등) 안에 행으로 추가되어야 합니다.
+4. status 분류: 
+   - 완료된 업무 -> "완료"
+   - 진행 중인 업무 -> "진행중"
+   - 시작 전/예정 업무 -> "예정"
+5. owner: 각 팀의 [Owner] 섹션에 적힌 방장 이름을 모든 행에 동일하게 적용하세요.
+6. d1(이번주), d2(다음주) 날짜 배열 생성 규칙:
+   - 텍스트 내 날짜 힌트 분석: (3/17), (3/14완료), (3/10~3/21), (~3/21), (3월 중)
+   - 요일 인덱스: 월=0, 화=1, 수=2, 목=3, 금=4, 토=5, 일=6
+   - 단일 날짜 (3/17): 해당 날짜의 요일에 점 하나
+   - 기간 (3/10~3/21): 시작일부터 종료일까지의 모든 요일에 점
+   - 마감일 (~3/21): 오늘부터 해당 날짜까지의 모든 요일에 점
+   - 월 단위 (3월 중): 해당 주 전체(0~6)에 점
 
 [데이터 스키마]
-groups 배열: 반드시 위 5개 팀 순서대로
-각 그룹: { dept, cls, rows: [{status, owner, task, d1, d2}] }
-- status: "완료" | "진행중" | "예정"
-- owner: 보고서에서 작성자/담당자 이름 추출 (없으면 팀명)
-- task: 구체적인 업무 내용 (한국어)
-- d1: 이번주 해당 요일 인덱스 배열 (월=0,화=1,수=2,목=3,금=4,토=5,일=6), 날짜 언급 없으면 []
-- d2: 다음주 해당 요일 인덱스 배열, 없으면 []
+{
+  "summary": "3문장 한국어 요약",
+  "groups": [
+    { "dept": "팀명", "cls": "팀코드", "rows": [{ "status", "owner", "task", "d1", "d2" }] }
+  ]
+}
 
 [팀 보고서]
 ${fullContext}
 
-[출력 형식 - JSON만, 다른 텍스트 절대 금지]
-{
-  "summary": "3문장 한국어 요약",
-  "groups": [
-    {"dept":"BAT","cls":"BAT","rows":[{"status":"완료","owner":"홍길동","task":"업무내용","d1":[0,1,2],"d2":[]}]},
-    {"dept":"PMI","cls":"PMI","rows":[{"status":"진행중","owner":"김철수","task":"업무내용","d1":[],"d2":[0,1]}]},
-    {"dept":"KT&G글로벌","cls":"KTG","rows":[{"status":"예정","owner":"이영희","task":"업무내용","d1":[],"d2":[]}]},
-    {"dept":"엘리자베스아덴","cls":"ELIZ","rows":[{"status":"진행중","owner":"박민준","task":"업무내용","d1":[],"d2":[]}]},
-    {"dept":"U+","cls":"UPLUS","rows":[{"status":"완료","owner":"최지원","task":"업무내용","d1":[3,4],"d2":[]}]}
-  ]
-}`;
+[출력 형식 - JSON만]`;
 
                 setAiProgress(60);
 
