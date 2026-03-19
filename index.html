@@ -275,25 +275,30 @@
             letter-spacing: 1px;
         }
 
-        .textarea-premium {
+        .textarea-premium,
+        .editor-area {
             width: 100%;
-            min-height: 200px;
-            background: rgba(0, 0, 0, 0.2);
+            min-height: 450px;
+            /* 기본 높이를 시원하게 키움! */
+            background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--border-glass);
-            border-radius: 14px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 24px;
             color: #fff;
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.7;
             outline: none;
             transition: 0.3s;
             resize: vertical;
+            /* 사용자가 필요하면 더 늘릴 수도 있음 */
         }
 
-        .textarea-premium:focus {
+        .textarea-premium:focus,
+        .editor-area:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(108, 92, 231, 0.15);
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 0 20px rgba(108, 92, 231, 0.2);
         }
 
         .btn-premium {
@@ -826,18 +831,16 @@
                 const prompt = `당신은 전문 PM입니다. 아래 팀 보고서를 분석하여 정확히 JSON만 출력하세요.
 현재 날짜: ${today.toISOString().split('T')[0]} (오늘 기준 1주차와 2주차 요일을 계산하세요)
 
-[기본 규칙]
-1. 팀 목록 및 순서 엄수: BAT -> PMI -> KT&G글로벌 -> 엘리자베스아덴 -> U+
-2. 유사 업무 통합 (매우 중요): 동일 프로젝트나 주제를 공유하는 여러 업무는 하나로 통합하여 정리하세요. 
-   - 형식 예: "**[프로젝트명] - 세부업무A / 세부업무B _ 일정**" 
-   - 예: "LG 로봇청소기 - A타입 77조 제작 / B타입 80조 제작 _ 5월 설치" 
-   - 이를 통해 전체 행(row)의 개수를 조절하여 가독성을 극대화하세요.
-3. 업무 정렬: 각 팀 구역 내에서 업무를 '완료' -> '진행중' -> '예정' 순으로 나열하세요.
-4. status 분류: '완료된 업무' -> "완료", '진행중' -> "진행중", '시작 전' -> "예정"
-5. owner: 각 팀의 [Owner] 섹션에 적힌 방장 이름을 모든 행에 동일하게 적용하세요.
-6. d1/d2 날짜 점(●) 생성 규칙 (매우 엄격):
-   - **반드시** 텍스트 내에 (3/17), (~3/21) 등 명시적인 날짜 힌트가 있는 경우에만 분석하여 요일 배열을 채우세요.
-   - 명확한 날짜 힌트가 전혀 없다면 **반드시** 빈 배열 [] 을 출력하세요.
+[기독성 극대화를 위한 요약 규칙 - 지극히 엄격함]
+1. 유사 업무 강제 통합: 동일한 프로젝트명이나 반복되는 키워드(예: LG 로봇청소기)가 있는 업무는 절대로 행을 나누지 말고 **무조건 단 하나의 행**으로 합쳐서 정리하세요.
+   - 필수 형식: "**[공통 프로젝트명] - 세부항목A / 세부항목B _ 기간/일정**"
+   - 실전 예시: "**LG 로봇청소기 - 구 A타입 77조 제작 / 신 B타입 80조 제작 _ 5월 설치**"
+2. 불필요한 중복 제거: 단어의 중복(예: 같은 팀명 반복, 같은 프로젝트명 반복)을 극도로 제한하고, 중복되는 수식어는 과감히 삭제하여 전문적인 비즈니스 문법으로 요약하세요.
+3. 팀 목록 및 순서 엄수: BAT -> PMI -> KT&G글로벌 -> 엘리자베스아덴 -> U+
+4. 업무 정렬: 각 팀 구역 내에서 통합된 업무들을 '완료' -> '진행중' -> '예정' 순으로 나열하세요.
+5. status 분류: 완료/진행중/예정 3가지로만 구분.
+6. owner: 각 팀의 [Owner] 섹션 방장 이름을 해당 팀의 모든 행에 적용.
+7. d1/d2 날짜 점(●): 텍스트 내 (3/17), (~3/21) 등 명시적 힌트가 있는 경우만 분석.
 
 [데이터 스키마]
 {
