@@ -238,32 +238,33 @@
         }
 
         /* 데이터 셀 */
+        /* 팀 간 구분선: 너무 두껍지 않게 부드럽게 통일 */
+        tr:has(+ tr:not([class^="dept-"])) td,
+        tr:last-child td {
+            border-bottom: 1.5px solid #888 !important;
+            /* 약간만 선명한 정도로 조절 */
+        }
+
+        /* 모든 셀의 세로/가로 구분선 명확히 (부서, 작성자 처럼) */
+        tr td {
+            vertical-align: middle;
+            border-bottom: 1px solid #ccc;
+            /* 가로선 */
+            border-right: 1px solid #ccc;
+            /* 세로선 명확히! */
+            padding: 8px;
+        }
+
         td.dept-cell {
             vertical-align: middle;
-            /* 세로 중앙 정렬 핵심! */
             text-align: center;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 13px;
-            /* 글자 크기 살짝 키움 */
-            background: rgba(0, 0, 0, 0.02);
-            /* 부서칸 배경 살짝 강조 */
+            background: rgba(0, 0, 0, 0.05);
             white-space: nowrap;
             min-width: 60px;
             border-right: 2px solid #333 !important;
-            /* 부서-업무 구분선 명확히 */
-        }
-
-        /* 팀이 바뀔 때 마지막 줄에 굵은 선 추가 */
-        tr:has(+ tr:not([class^="dept-"])) td,
-        tr:last-child td {
-            border-bottom: 2px solid #333 !important;
-        }
-
-        /* 동일한 팀 내 행 구분은 가늘게 */
-        tr td {
-            vertical-align: middle;
-            border-bottom: 1px solid #ddd;
-            border-right: 1px solid #eee;
+            /* 부서칸은 대분류이므로 강하게 유지 */
         }
 
         td.status-cell {
