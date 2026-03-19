@@ -580,11 +580,19 @@
         // ════════════════════════════════════════════
         function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
-        let groups = deepClone(defaultGroups); // 기본값 (Firebase 로드 전 표시)
+        let groups = deepClone(defaultGroups);
 
-        // Firebase에서 최신 AI 취합 데이터 로드
+        // Firebase에서 최신 AI 취합 데이터 로드 (오프라인/다운로드 파일 대비용)
         (async function loadFromFirebase() {
             try {
+                // 만약 defaultGroups가 이미 데이터가 채워진 상태라면 (다운로드 버전), Firebase 조회를 건너뜁니다.
+                // 단, 기본 템플릿의 첫 번째 행이 비어있는지 확인하여 비어있을 때만 로드합니다.
+                const isTemplateEmpty = !defaultGroups[0]?.rows[0]?.task;
+                if (!isTemplateEmpty) {
+                    console.log('✅ 로컬에 내장된 데이터를 사용합니다.');
+                    render(); return;
+                }
+
                 const FIREBASE_CONFIG = {
                     apiKey: "AIzaSyBbP8bRR243tRj1KZ0vCbDMEVDjdEXXTWA",
                     authDomain: "posi-design.firebaseapp.com",
@@ -593,18 +601,17 @@
                     messagingSenderId: "122773865462",
                     appId: "1:122773865462:web:666344c71cc29856babdd7"
                 };
+                if (typeof firebase === 'undefined') return; // SDK 차단 시 중단
                 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
                 const db = firebase.firestore();
                 const doc = await db.collection('final_reports').doc('latest').get();
                 if (doc.exists && doc.data().groups) {
-                    const firebaseGroups = JSON.parse(doc.data().groups);
-                    groups = firebaseGroups;
-                    render(); // Firebase 데이터로 재렌더링
-                    const info = document.getElementById('reportInfo');
-                    if (info) info.textContent = '☁️ Firebase 연동 | 갱신: ' + (doc.data().updatedAt || '').slice(0, 10);
+                    groups = JSON.parse(doc.data().groups);
+                    render(); // Firebase 데이터로 덮어쓰기
                 }
             } catch (e) {
-                console.log('Firebase 로드 실패 (offline 모드):', e.message);
+                console.log('Firebase 로드 생략 (안전 모드):', e.message);
+                render(); // 오류 발생 시 이미 내장된 데이터로라도 그리기
             }
         })();
 
