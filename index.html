@@ -597,9 +597,13 @@
                         <div class="progress-bar" id="aiProgressBar"></div>
                     </div>
                     <div id="aiSummary" class="summary-box" style="display:none;">AI가 분석 중입니다...</div>
-                    <div class="action-bar" id="postAiActions" style="margin-top:20px; display:none;">
-                        <button class="btn-premium btn-primary" onclick="deployToGithub()">🚀 GitHub 최종 배포</button>
+                    <div class="action-bar" id="postAiActions"
+                        style="margin-top:20px; display:none; flex-wrap:wrap; gap:8px;">
+                        <button class="btn-premium btn-primary" onclick="saveReportToFirebase()">☁️ Firebase에 최종 보고서 저장
+                            (URL 공유)</button>
                         <button class="btn-premium btn-secondary" onclick="downloadHtml()">⬇️ HTML 다운로드</button>
+                        <button class="btn-premium" style="background:#444" onclick="deployToGithub()">🚀 GitHub 배포
+                            (선택사항)</button>
                     </div>
                 </div>
             </div>
@@ -655,6 +659,7 @@
             loadStoredSettings();
             initFirebase();
             loadTeamData();
+            checkAndShowFinalReport();
         };
 
         function loadStoredSettings() {
@@ -838,6 +843,36 @@
             } catch (e) {
                 summaryBox.textContent = "❌ AI 분석 중 오류 발생: " + e.message;
             } finally { setAiProgress(0); }
+        }
+
+        // ── Save to Firebase ──
+        async function saveReportToFirebase() {
+            if (!aiAggregatedData || !db) return showToast("데이터 또는 Firebase 연결 없음", "error");
+            try {
+                await db.collection('final_reports').doc('latest').set({
+                    summary: aiAggregatedData.summary,
+                    groups: JSON.stringify(aiAggregatedData.groups),
+                    updatedAt: new Date().toISOString()
+                });
+                showToast("✅ Firebase에 저장 완료! 이제 누구나 URL로 확인 가능합니다", "success");
+            } catch (e) { showToast("저장 오류: " + e.message, "error"); }
+        }
+
+        async function checkAndShowFinalReport() {
+            if (!db) return;
+            try {
+                const doc = await db.collection('final_reports').doc('latest').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const summaryBox = document.getElementById('aiSummary');
+                    summaryBox.style.display = 'block';
+                    summaryBox.innerHTML = `<strong>📋 최신 AI 취합 보고서</strong> <span style="font-size:11px;color:#888">${data.updatedAt ? '갱신: ' + data.updatedAt.slice(0, 10) : ''}</span><br><br>${(data.summary || '').replace(/\n/g, '<br>')}`;
+                    if (data.groups) {
+                        aiAggregatedData = { summary: data.summary, groups: JSON.parse(data.groups) };
+                        document.getElementById('postAiActions').style.display = 'flex';
+                    }
+                }
+            } catch (e) { console.log('No final report yet:', e.message); }
         }
 
         // ── Output Logic ──
