@@ -879,15 +879,33 @@ ${fullContext}
                     // JSON 파싱 (마크다운 제거)
                     const jsonString = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
                     const parsed = JSON.parse(jsonString);
-
                     aiAggregatedData = parsed;
-                    // localStorage에 저장 → weekly-report.html이 자동으로 불러옴
+
+                    // 르네님 요청 형식의 정돈된 브리핑 생성
+                    let briefingHtml = `<div style="margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+                        <strong style="color:var(--accent); font-size:15px;">🤖 AI 종합 브리핑 (미리보기)</strong><br>
+                        <p style="font-size:13px; margin-top:8px; line-height:1.6; opacity:0.9;">${(parsed.summary || "").replace(/\n/g, "<br>")}</p>
+                    </div><div style="font-size:12.5px; line-height:1.8;">`;
+
+                    (parsed.groups || []).forEach(group => {
+                        const teamColor = `var(--${group.cls ? group.cls.toLowerCase() : 'accent'})`;
+                        briefingHtml += `<div style="margin-bottom:8px;"><strong style="color:${teamColor};">[${group.dept}팀]</strong> `;
+                        const rows = group.rows || [];
+                        rows.forEach((row, idx) => {
+                            briefingHtml += `[${row.status || '진행'}] ${row.task || ''}${idx < rows.length - 1 ? ', ' : ''}`;
+                        });
+                        briefingHtml += `</div>`;
+                    });
+                    briefingHtml += `</div><div style="margin-top:10px; font-size:11px; color:#00d2d3;">✅ 확인 후 아래 '저장' 버튼을 누르면 보고서에 즉시 반영됩니다.</div>`;
+
+                    summaryBox.innerHTML = briefingHtml;
+                    summaryBox.style.display = 'block';
+
                     localStorage.setItem('posi_report_groups', JSON.stringify(parsed.groups));
                     localStorage.setItem('posi_report_summary', parsed.summary);
-                    localStorage.setItem('posi_report_updated', new Date().toLocaleString('ko-KR'));
-                    summaryBox.innerHTML = `<strong>✨ AI 분석 완료</strong><br><br>${parsed.summary.replace(/\n/g, '<br>')}<br><br><span style="color:#00d2d3;font-size:12px">✅ 데이터 저장됨 — weekly-report.html을 열면 자동 적용됩니다</span>`;
                     document.getElementById('postAiActions').style.display = 'flex';
-                } else { throw new Error("AI 응답 형식이 올바르지 않습니다."); }
+                } else { throw new Error("AI 응답 데이터가 없습니다."); }
+
 
             } catch (e) {
                 summaryBox.textContent = "❌ AI 분석 중 오류 발생: " + e.message;
