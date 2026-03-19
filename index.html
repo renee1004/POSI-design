@@ -823,22 +823,38 @@
                 setAiProgress(40);
 
                 // 2. Prepare Prompt
-                const prompt = `You are a professional project manager. Based on the following team reports, perform these tasks:
-                1. Write a 3-sentence executive summary in Korean.
-                2. Generate a JSON array for the "defaultGroups" structure. 
-                   Schema: { dept: string, cls: string, rows: [{ status: "완료"|"진행중"|"예정", owner: string, task: string, d1: number[], d2: number[] }] }
-                   - status: infer from text.
-                   - d1/d2: infer dates from strings like (3/20) or just put empty arrays if not clear.
-                   - d1 is week 1 (current), d2 is week 2 (next).
-                
-                Team Reports:
-                ${fullContext}
-                
-                Response format (Strictly JSON, no other text):
-                {
-                  "summary": "서머리 내용...",
-                  "groups": [ ... ]
-                }`;
+                const prompt = `당신은 전문 PM입니다. 아래 팀 보고서를 분석하여 정확히 JSON만 출력하세요.
+
+[팀 목록 - 반드시 이 순서, 이 cls 값 사용]
+1. BAT팀 → cls: "BAT", dept: "BAT"
+2. PMI팀 → cls: "PMI", dept: "PMI"  
+3. KT&G글로벌팀 → cls: "KTG", dept: "KT&G글로벌"
+4. 엘리자베스아덴팀 → cls: "ELIZ", dept: "엘리자베스아덴"
+5. U+팀 → cls: "UPLUS", dept: "U+"
+
+[데이터 스키마]
+groups 배열: 반드시 위 5개 팀 순서대로
+각 그룹: { dept, cls, rows: [{status, owner, task, d1, d2}] }
+- status: "완료" | "진행중" | "예정"
+- owner: 보고서에서 작성자/담당자 이름 추출 (없으면 팀명)
+- task: 구체적인 업무 내용 (한국어)
+- d1: 이번주 해당 요일 인덱스 배열 (월=0,화=1,수=2,목=3,금=4,토=5,일=6), 날짜 언급 없으면 []
+- d2: 다음주 해당 요일 인덱스 배열, 없으면 []
+
+[팀 보고서]
+${fullContext}
+
+[출력 형식 - JSON만, 다른 텍스트 절대 금지]
+{
+  "summary": "3문장 한국어 요약",
+  "groups": [
+    {"dept":"BAT","cls":"BAT","rows":[{"status":"완료","owner":"홍길동","task":"업무내용","d1":[0,1,2],"d2":[]}]},
+    {"dept":"PMI","cls":"PMI","rows":[{"status":"진행중","owner":"김철수","task":"업무내용","d1":[],"d2":[0,1]}]},
+    {"dept":"KT&G글로벌","cls":"KTG","rows":[{"status":"예정","owner":"이영희","task":"업무내용","d1":[],"d2":[]}]},
+    {"dept":"엘리자베스아덴","cls":"ELIZ","rows":[{"status":"진행중","owner":"박민준","task":"업무내용","d1":[],"d2":[]}]},
+    {"dept":"U+","cls":"UPLUS","rows":[{"status":"완료","owner":"최지원","task":"업무내용","d1":[3,4],"d2":[]}]}
+  ]
+}`;
 
                 setAiProgress(60);
 
