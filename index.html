@@ -590,8 +590,10 @@
                     <div class="card-header">
                         <div class="card-title" style="color: var(--accent);">🤖 Gemini AI 통합 엔진</div>
                     </div>
-                    <div class="action-bar">
+                    <div class="action-bar" style="flex-wrap:wrap; gap:8px;">
                         <button class="btn-premium btn-ai" onclick="runGeminiAggregation()">✨ Gemini AI 취합 실행</button>
+                        <button class="btn-premium" style="background:#2d3748; font-size:11px;"
+                            onclick="listAvailableModels()">🔍 사용 가능 모델 확인</button>
                     </div>
                     <div class="progress-indicator" id="aiProgress">
                         <div class="progress-bar" id="aiProgressBar"></div>
@@ -769,6 +771,26 @@
             } catch (e) { tbody.innerHTML = `<tr><td colspan="4">오류: ${e.message}</td></tr>`; }
         }
 
+        // ── List Available Models ──
+        async function listAvailableModels() {
+            const key = localStorage.getItem('posi_gemini_key');
+            if (!key) return showToast('Gemini API Key가 없습니다', 'error');
+            const summaryBox = document.getElementById('aiSummary');
+            summaryBox.style.display = 'block';
+            summaryBox.textContent = '🔍 사용 가능한 모델 조회 중...';
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error.message);
+                const models = data.models
+                    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+                    .map(m => m.name);
+                summaryBox.innerHTML = `<strong>✅ generateContent 사용 가능 모델 목록:</strong><br><br>${models.join('<br>')}`;
+            } catch (e) {
+                summaryBox.textContent = '❌ 모델 조회 실패: ' + e.message;
+            }
+        }
+
         // ── Gemini AI Logic ──
         async function runGeminiAggregation() {
             const key = localStorage.getItem('posi_gemini_key');
@@ -820,32 +842,36 @@
 
                 setAiProgress(60);
 
-                // 3. API Call
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+                // 3. API Call (gemini-2.5-flash, v1beta)
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { response_mime_type: "application/json" }
+                        generationConfig: { temperature: 0.1 }
                     })
                 });
 
                 const result = await response.json();
                 setAiProgress(90);
 
+                if (result.error) throw new Error(result.error.message);
+
                 if (result.candidates && result.candidates[0]) {
                     let rawText = result.candidates[0].content.parts[0].text;
                     console.log("AI Raw Text:", rawText);
 
-                    // Clean markdown if present (though response_mime_type should handle it)
+                    // JSON 파싱 (마크다운 제거)
                     const jsonString = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
                     const parsed = JSON.parse(jsonString);
 
                     aiAggregatedData = parsed;
-                    summaryBox.innerHTML = `<strong>✨ AI 분석 완료</strong><br><br>${parsed.summary.replace(/\n/g, '<br>')}`;
+                    // localStorage에 저장 → weekly-report.html이 자동으로 불러옴
+                    localStorage.setItem('posi_report_groups', JSON.stringify(parsed.groups));
+                    localStorage.setItem('posi_report_summary', parsed.summary);
+                    localStorage.setItem('posi_report_updated', new Date().toLocaleString('ko-KR'));
+                    summaryBox.innerHTML = `<strong>✨ AI 분석 완료</strong><br><br>${parsed.summary.replace(/\n/g, '<br>')}<br><br><span style="color:#00d2d3;font-size:12px">✅ 데이터 저장됨 — weekly-report.html을 열면 자동 적용됩니다</span>`;
                     document.getElementById('postAiActions').style.display = 'flex';
-                } else if (result.error) {
-                    throw new Error(result.error.message);
                 } else { throw new Error("AI 응답 형식이 올바르지 않습니다."); }
 
             } catch (e) {
@@ -893,18 +919,22 @@
             showToast("🚀 GitHub 배포 시작...", "success");
 
             try {
-                // 1. Get Template
-                // In this browser version, we fetch the template from our own repo or just use a local fallback
-                const templateRes = await fetch('./weekly-report.html');
-                let templateText = await templateRes.text();
+                // 1. Get Template (fetch 실패 시 파일 선택)
+                let templateText;
+                try {
+                    const templateRes = await fetch('./weekly-report.html');
+                    if (!templateRes.ok) throw new Error('fetch blocked');
+                    templateText = await templateRes.text();
+                } catch (fetchErr) {
+                    templateText = await pickTemplateFile();
+                    if (!templateText) return;
+                }
 
-                // 2. Replace Data
-                const newJsonStr = JSON.stringify(aiAggregatedData.groups, null, 2);
-                const pattern = /(const defaultGroups\s*=\s*)(\[[\s\S]*?\]);/;
-                const updatedHtml = templateText.replace(pattern, `$1${newJsonStr};`);
+                // 2. Replace Data (POSI_END 마커 기반)
+                const updatedHtml = applyDataToTemplate(templateText, aiAggregatedData.groups);
 
                 // 3. GitHub PUT
-                const path = "index.html";
+                const path = "weekly-report.html";
                 const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
                 const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
 
@@ -920,27 +950,73 @@
                 if (sha) body.sha = sha;
 
                 const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
-                if (putRes.ok) showToast("🎉 GitHub 배포 성공!", "success");
-                else throw new Error("배포 실패");
+                if (putRes.ok) showToast("🎉 GitHub 배포 성공! URL에서 확인하세요.", "success");
+                else throw new Error((await putRes.json()).message || "배포 실패");
 
             } catch (e) { showToast("배포 오류: " + e.message, "error"); }
         }
 
-        function downloadHtml() {
+        function applyDataToTemplate(templateText, groups) {
+            const newJsonStr = JSON.stringify(groups, null, 2);
+            // POSI_END 마커 기반 교체 (중첩 배열 대응)
+            const result = templateText.replace(
+                /const defaultGroups = [\s\S]*?\/\* POSI_END \*\//,
+                `const defaultGroups = ${newJsonStr}; /* POSI_END */`
+            );
+            if (result === templateText) {
+                // 마커가 없을 경우 fallback
+                return templateText.replace(
+                    /(const defaultGroups\s*=\s*)(\[[\s\S]*?\]\s*;)/,
+                    `$1${newJsonStr};`
+                );
+            }
+            return result;
+        }
+
+        async function pickTemplateFile() {
+            return new Promise((resolve) => {
+                showToast("📂 weekly-report.html 파일을 선택해 주세요", "success");
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.html';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) { resolve(null); return; }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => resolve(ev.target.result);
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+        }
+
+        async function downloadHtml() {
             if (!aiAggregatedData) return;
             showToast("파일 생성 중...", "success");
-            // Template logic similar to deployToGithub
-            fetch('./weekly-report.html').then(r => r.text()).then(templateText => {
-                const newJsonStr = JSON.stringify(aiAggregatedData.groups, null, 2);
-                const updatedHtml = templateText.replace(/(const defaultGroups\s*=\s*)(\[[\s\S]*?\]);/, `$1${newJsonStr};`);
+            try {
+                let templateText;
+                try {
+                    const res = await fetch('./weekly-report.html');
+                    if (!res.ok) throw new Error('fetch blocked');
+                    templateText = await res.text();
+                } catch (fetchErr) {
+                    // 로컬 파일 보안 제한 → 파일 선택 다이얼로그
+                    templateText = await pickTemplateFile();
+                    if (!templateText) return;
+                }
 
+                const updatedHtml = applyDataToTemplate(templateText, aiAggregatedData.groups);
                 const blob = new Blob([updatedHtml], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `weekly-report-${new Date().toISOString().slice(0, 10)}.html`;
                 a.click();
-            });
+                showToast("✅ 다운로드 완료!", "success");
+            } catch (e) {
+                showToast("❌ " + e.message, "error");
+                console.error(e);
+            }
         }
 
         // ── Utils ──
