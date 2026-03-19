@@ -603,10 +603,8 @@
                     <div class="card-header">
                         <div class="card-title" style="color: var(--accent);">🤖 Gemini AI 통합 엔진</div>
                     </div>
-                    <div class="action-bar" style="flex-wrap:wrap; gap:8px;">
+                    <div class="action-bar">
                         <button class="btn-premium btn-ai" onclick="runGeminiAggregation()">✨ Gemini AI 취합 실행</button>
-                        <button class="btn-premium" style="background:#2d3748; font-size:11px;"
-                            onclick="listAvailableModels()">🔍 사용 가능 모델 확인</button>
                     </div>
                     <div class="progress-indicator" id="aiProgress">
                         <div class="progress-bar" id="aiProgressBar"></div>
@@ -791,26 +789,6 @@
             } catch (e) { tbody.innerHTML = `<tr><td colspan="4">오류: ${e.message}</td></tr>`; }
         }
 
-        // ── List Available Models ──
-        async function listAvailableModels() {
-            const key = localStorage.getItem('posi_gemini_key');
-            if (!key) return showToast('Gemini API Key가 없습니다', 'error');
-            const summaryBox = document.getElementById('aiSummary');
-            summaryBox.style.display = 'block';
-            summaryBox.textContent = '🔍 사용 가능한 모델 조회 중...';
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-                const data = await res.json();
-                if (data.error) throw new Error(data.error.message);
-                const models = data.models
-                    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-                    .map(m => m.name);
-                summaryBox.innerHTML = `<strong>✅ generateContent 사용 가능 모델 목록:</strong><br><br>${models.join('<br>')}`;
-            } catch (e) {
-                summaryBox.textContent = '❌ 모델 조회 실패: ' + e.message;
-            }
-        }
-
         // ── Gemini AI Logic ──
         async function runGeminiAggregation() {
             const key = localStorage.getItem('posi_gemini_key');
@@ -849,21 +827,17 @@
 현재 날짜: ${today.toISOString().split('T')[0]} (오늘 기준 1주차와 2주차 요일을 계산하세요)
 
 [기본 규칙]
-1. 팀 목록 및 순서 엄수: BAT -> PMI -> KT&G글로벌 -> 엘리자베스아덴 -> U+ (반드시 이 순서대로 모든 팀의 데이터를 생성하세요)
-2. 개별 업무 분리: 보고서 내용에서 각 개별 업무를 정밀하게 추출하여, 각각 별도의 행(row)으로 생성하세요. 절대 여러 업무를 한 행에 뭉뚱그려 넣지 마세요.
-3. 팀 컬러 매칭: 각 업무는 반드시 해당 팀의 섹션(BAT, PMI 등) 안에 행으로 추가되어야 합니다.
-4. status 분류: 
-   - 완료된 업무 -> "완료"
-   - 진행 중인 업무 -> "진행중"
-   - 시작 전/예정 업무 -> "예정"
+1. 팀 목록 및 순서 엄수: BAT -> PMI -> KT&G글로벌 -> 엘리자베스아덴 -> U+
+2. 유사 업무 통합 (매우 중요): 동일 프로젝트나 주제를 공유하는 여러 업무는 하나로 통합하여 정리하세요. 
+   - 형식 예: "**[프로젝트명] - 세부업무A / 세부업무B _ 일정**" 
+   - 예: "LG 로봇청소기 - A타입 77조 제작 / B타입 80조 제작 _ 5월 설치" 
+   - 이를 통해 전체 행(row)의 개수를 조절하여 가독성을 극대화하세요.
+3. 업무 정렬: 각 팀 구역 내에서 업무를 '완료' -> '진행중' -> '예정' 순으로 나열하세요.
+4. status 분류: '완료된 업무' -> "완료", '진행중' -> "진행중", '시작 전' -> "예정"
 5. owner: 각 팀의 [Owner] 섹션에 적힌 방장 이름을 모든 행에 동일하게 적용하세요.
-6. d1(이번주), d2(다음주) 날짜 배열 생성 규칙:
-   - 텍스트 내 날짜 힌트 분석: (3/17), (3/14완료), (3/10~3/21), (~3/21), (3월 중)
-   - 요일 인덱스: 월=0, 화=1, 수=2, 목=3, 금=4, 토=5, 일=6
-   - 단일 날짜 (3/17): 해당 날짜의 요일에 점 하나
-   - 기간 (3/10~3/21): 시작일부터 종료일까지의 모든 요일에 점
-   - 마감일 (~3/21): 오늘부터 해당 날짜까지의 모든 요일에 점
-   - 월 단위 (3월 중): 해당 주 전체(0~6)에 점
+6. d1/d2 날짜 점(●) 생성 규칙 (매우 엄격):
+   - **반드시** 텍스트 내에 (3/17), (~3/21) 등 명시적인 날짜 힌트가 있는 경우에만 분석하여 요일 배열을 채우세요.
+   - 명확한 날짜 힌트가 전혀 없다면 **반드시** 빈 배열 [] 을 출력하세요.
 
 [데이터 스키마]
 {
