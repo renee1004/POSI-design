@@ -238,33 +238,32 @@
         }
 
         /* 데이터 셀 */
-        /* 팀 간 구분선: 너무 두껍지 않게 부드럽게 통일 */
-        tr:has(+ tr:not([class^="dept-"])) td,
-        tr:last-child td {
-            border-bottom: 1.5px solid #888 !important;
-            /* 약간만 선명한 정도로 조절 */
-        }
-
-        /* 모든 셀의 세로/가로 구분선 명확히 (부서, 작성자 처럼) */
-        tr td {
-            vertical-align: middle;
-            border-bottom: 1px solid #ccc;
-            /* 가로선 */
-            border-right: 1px solid #ccc;
-            /* 세로선 명확히! */
-            padding: 8px;
-        }
-
         td.dept-cell {
             vertical-align: middle;
+            /* 세로 중앙 정렬 핵심! */
             text-align: center;
-            font-weight: 800;
+            font-weight: 700;
             font-size: 13px;
-            background: rgba(0, 0, 0, 0.05);
+            /* 글자 크기 살짝 키움 */
+            background: rgba(0, 0, 0, 0.02);
+            /* 부서칸 배경 살짝 강조 */
             white-space: nowrap;
             min-width: 60px;
             border-right: 2px solid #333 !important;
-            /* 부서칸은 대분류이므로 강하게 유지 */
+            /* 부서-업무 구분선 명확히 */
+        }
+
+        /* 팀이 바뀔 때 마지막 줄에 굵은 선 추가 */
+        tr:has(+ tr:not([class^="dept-"])) td,
+        tr:last-child td {
+            border-bottom: 2px solid #333 !important;
+        }
+
+        /* 동일한 팀 내 행 구분은 가늘게 */
+        tr td {
+            vertical-align: middle;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #eee;
         }
 
         td.status-cell {
@@ -546,32 +545,352 @@
         //  기본 데이터
         // ════════════════════════════════════════════
         const defaultGroups = [
-            {
-                dept: "BAT", cls: "BAT", rows: [
-                    { status: "", owner: "", task: "", d1: [], d2: [] }
-                ]
-            },
-            {
-                dept: "PMI", cls: "PMI", rows: [
-                    { status: "", owner: "", task: "", d1: [], d2: [] }
-                ]
-            },
-            {
-                dept: "KT&G글로벌", cls: "KTG", rows: [
-                    { status: "", owner: "", task: "", d1: [], d2: [] }
-                ]
-            },
-            {
-                dept: "엘리자베스아덴", cls: "ELIZ", rows: [
-                    { status: "", owner: "", task: "", d1: [], d2: [] }
-                ]
-            },
-            {
-                dept: "U+", cls: "UPLUS", rows: [
-                    { status: "", owner: "", task: "", d1: [], d2: [] }
-                ]
-            },
-        ]; /* POSI_END */
+  {
+    "dept": "BAT",
+    "cls": "BAT",
+    "rows": [
+      {
+        "status": "완료",
+        "owner": "김상렬",
+        "task": "AS - 2월분 491점 전국 AS",
+        "d1": null,
+        "d2": "2026-03-15"
+      },
+      {
+        "status": "진행중",
+        "owner": "김상렬",
+        "task": "LG 로봇청소기 - 구 A타입 77조 / 신 B타입 80조 집기 제작 및 5월 설치",
+        "d1": null,
+        "d2": "2026-05-31"
+      },
+      {
+        "status": "진행중",
+        "owner": "김상렬",
+        "task": "LG 틔운 무드온 신제품 집기 시안 및 예가 제출",
+        "d1": "2026-03-13",
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "김상렬",
+        "task": "3D POSM - BWU 800개 / UTC5X1 3,200개 / 1C 5,400개 / 2C 8,300개 / PCDU 600개 / 어댑터 1,800개 분할 납품 시작",
+        "d1": "2026-03-01",
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "김상렬",
+        "task": "리퍼 - 3월분 BWU,PCDU,폐기 회수 및 점검/세척/수리/재포장",
+        "d1": null,
+        "d2": "2026-03-25"
+      },
+      {
+        "status": "예정",
+        "owner": "김상렬",
+        "task": "Perfect Store POSM 리뉴얼 납품",
+        "d1": null,
+        "d2": "2026-03-25"
+      },
+      {
+        "status": "예정",
+        "owner": "김상렬",
+        "task": "리뉴얼 BWU 제안 3차 제출 준비",
+        "d1": null,
+        "d2": "2026-03-27"
+      },
+      {
+        "status": "예정",
+        "owner": "김상렬",
+        "task": "Quarterly Innovation 2분기 제출",
+        "d1": null,
+        "d2": "2026-04-30"
+      }
+    ]
+  },
+  {
+    "dept": "PMI",
+    "cls": "PMI",
+    "rows": [
+      {
+        "status": "완료",
+        "owner": "심연섭",
+        "task": "샘플링 - Multi CD 7X 신규 LCD 자체 샘플 전달",
+        "d1": null,
+        "d2": "2026-03-13"
+      },
+      {
+        "status": "완료",
+        "owner": "심연섭",
+        "task": "샘플링 - LAMP 컨슈머 인게이지먼트 툴(큐브) 2차 샘플 제작 및 보고",
+        "d1": null,
+        "d2": "2026-03-17"
+      },
+      {
+        "status": "완료",
+        "owner": "심연섭",
+        "task": "샘플링 - 비주얼 견적 및 샘플 제작",
+        "d1": null,
+        "d2": "2026-03-19"
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "시안 - VEEV SET Sell (CTU) 신규 디자인 시안 제출",
+        "d1": "2026-03-06",
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "Multi CD 2066대 - 7X 505대 완료분 보유 및 잔여분 모듈 조립 / 5월 초도 물량 발송 예정",
+        "d1": null,
+        "d2": "2026-05-31"
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "Multi CD 7X 530ea / 8X 375ea 추가 발주 및 헤더 LED 도트 그림자 확인",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "샘플링 - VEEV 디바이스용 모듈러 선반 / 기존 진열장용 VEEV 디바이스 거치대 샘플 제출",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "샘플링 - 기존 8X 진열장 벨크로 마감 타입 조사",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "시안 - Multi CD 사용 가이드 제작 / 글로리파이어 베이스(VEEV,아이코스) 설계 수정 및 레이아웃 작업 / LAMP 디바이스 셀러 유닛(스탠드타입) 피드백 정리",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "심연섭",
+        "task": "TP - 신규 포트녹스 비주얼(8X,7X) 약 1만4천장 양산",
+        "d1": "2026-03-01",
+        "d2": null
+      },
+      {
+        "status": "예정",
+        "owner": "심연섭",
+        "task": "HHGlobal 캠페인 CD Visual&TPOSM 비딩 준비",
+        "d1": null,
+        "d2": null
+      }
+    ]
+  },
+  {
+    "dept": "KT&G글로벌",
+    "cls": "KTG",
+    "rows": [
+      {
+        "status": "완료",
+        "owner": "전진혁",
+        "task": "러시아 - 2026 상반기용 12C 700ea / 6C 600ea 완료",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "완료",
+        "owner": "전진혁",
+        "task": "남아공, 보츠와나 - POSM, 판촉물 시안 견적 제작",
+        "d1": "2026-01-20",
+        "d2": "2026-02-28"
+      },
+      {
+        "status": "완료",
+        "owner": "전진혁",
+        "task": "태국 - 3C 모듈형 진열장 / 점주용 키트 / 티셔츠 / 2개피 키트 제작",
+        "d1": null,
+        "d2": "2026-03-10"
+      },
+      {
+        "status": "완료",
+        "owner": "전진혁",
+        "task": "타지키스탄 - 10C 3타입 250세트 제작 완료 및 4월말 도착 예정",
+        "d1": null,
+        "d2": "2026-04-30"
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "러시아 - 12C 1200ea 제작",
+        "d1": "2026-01-01",
+        "d2": "2026-04-15"
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "러시아 - 프리미엄 POSM / 진열장 개발",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "우즈벡 - 모듈형 진열장 1200세트 2/3/4월 3차 분할 배송",
+        "d1": "2026-02-01",
+        "d2": "2026-04-30"
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "몽골 - 10C 진열장 2타입 출장 샘플 시연 완료 및 300ea 일정 협의",
+        "d1": null,
+        "d2": "2026-03-31"
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "카메룬 - 5C 진열장 / POSM 시안 및 견적",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "볼리비아 - 진열장 / POSM 시안 및 견적",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "카자흐스탄 - 제안서 및 영업",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "전진혁",
+        "task": "글로벌본사 - 해외 브랜드센터 부서 신설",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "예정",
+        "owner": "전진혁",
+        "task": "러시아 출장 - 프리미엄 POSM 샘플 6ea / 음성인식 진열장 샘플 1ea / 프리미엄 진열장 기획안",
+        "d1": "2026-03-24",
+        "d2": "2026-03-27"
+      },
+      {
+        "status": "예정",
+        "owner": "전진혁",
+        "task": "러시아 - 2026 하반기용 4000ea 제작",
+        "d1": "2026-04-15",
+        "d2": "2026-08-31"
+      },
+      {
+        "status": "예정",
+        "owner": "전진혁",
+        "task": "우즈벡 - 하반기 수량 대기",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "예정",
+        "owner": "전진혁",
+        "task": "몽골 - 10C 진열장 1타입 2000~2500ea 제작",
+        "d1": null,
+        "d2": null
+      }
+    ]
+  },
+  {
+    "dept": "엘리자베스아덴",
+    "cls": "ELIZ",
+    "rows": [
+      {
+        "status": "진행중",
+        "owner": "백혜령",
+        "task": "AS (부산/대구상인/동래/중동) - 견적 발송 후 비용 이슈 대기",
+        "d1": "2026-02-13",
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "백혜령",
+        "task": "롯데 노원 리뉴얼 오픈 - 추가 보수 요청 컨펌 및 견적 조정 / 상담 테이블 발통 및 손잡이 제작 발주 / 트레이 2종 발주 / 트롤리 1종 시안/도면 작업 및 백화점 컨펌",
+        "d1": null,
+        "d2": "2026-03-31"
+      },
+      {
+        "status": "진행중",
+        "owner": "백혜령",
+        "task": "전매장 메이크업 테스터 신제품 업데이트 (16개 매장) - 시안 확정 및 도면/발주 완료 / UV 인쇄 및 설치 가이드 작성 / 제작 완료 및 택배 발송",
+        "d1": "2026-03-11",
+        "d2": "2026-03-22"
+      },
+      {
+        "status": "예정",
+        "owner": "백혜령",
+        "task": "롯데 분당 폐점 집기 철수 - 견적 확정 및 3/31 철수 진행 / 의자 회수 후 롯데 부산점 발송 예정",
+        "d1": null,
+        "d2": "2026-03-31"
+      },
+      {
+        "status": "예정",
+        "owner": "백혜령",
+        "task": "하반기 오픈 매장 공지 - 롯데 본점 리뉴얼 (10/3 설치, 10/4 오픈) / 신세계 의정부 (7월 미정)",
+        "d1": "2026-07-01",
+        "d2": "2026-10-04"
+      }
+    ]
+  },
+  {
+    "dept": "U+",
+    "cls": "UPLUS",
+    "rows": [
+      {
+        "status": "완료",
+        "owner": "김하진",
+        "task": "신규 VIP 굿즈 골프공 패키지 납품",
+        "d1": null,
+        "d2": "2026-03-18"
+      },
+      {
+        "status": "진행중",
+        "owner": "김하진",
+        "task": "구글 프로모션 - 시안 컨펌 및 설치",
+        "d1": null,
+        "d2": "2026-03-21"
+      },
+      {
+        "status": "진행중",
+        "owner": "김하진",
+        "task": "광고형 부착물 가이드 및 매뉴얼 - 이형 사이즈 리스트 취합",
+        "d1": null,
+        "d2": "2026-03-31"
+      },
+      {
+        "status": "진행중",
+        "owner": "김하진",
+        "task": "특판 부스 제작 - 시안 피드백 대기",
+        "d1": null,
+        "d2": null
+      },
+      {
+        "status": "진행중",
+        "owner": "김하진",
+        "task": "장기고객 대상 프로모션 - 렘피카 시안 진행 및 3/31 설치 / 화담숲 시안 진행 및 4월 중 설치",
+        "d1": null,
+        "d2": "2026-04-30"
+      }
+    ]
+  }
+]; /* POSI_END */
 
         // 클래스 매핑 (dept 이름이 바뀌어도 색상 유지용)
         const CLS_LIST = ["BAT", "PMI", "KTG", "ELIZ", "UPLUS"];
