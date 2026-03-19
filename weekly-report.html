@@ -578,8 +578,24 @@
         // ════════════════════════════════════════════
         //  데이터 로드/저장
         // ════════════════════════════════════════════
-        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+        // ════════════════════════════════════════════
+        //  날짜 유틸 (위치 교정: 최상단)
+        // ════════════════════════════════════════════
+        function getMonday(d) {
+            const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;
+            const m = new Date(d); m.setDate(d.getDate() + diff); m.setHours(0, 0, 0, 0); return m;
+        }
+        function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+        function fmt(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }
+        function weekRange(m) { return `${fmt(m)}(월)~${fmt(addDays(m, 6))}(일)`; }
 
+        const DAY_KO = ["월", "화", "수", "목", "금", "토", "일"];
+        let baseMonday = getMonday(new Date());
+
+        // ════════════════════════════════════════════
+        //  데이터 로직
+        // ════════════════════════════════════════════
+        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
         let groups = deepClone(defaultGroups);
 
         // Firebase에서 최신 AI 취합 데이터 로드 (오프라인/다운로드 파일 대비용)
@@ -635,19 +651,8 @@
             }
         }
 
-        // ════════════════════════════════════════════
-        //  날짜 유틸
-        // ════════════════════════════════════════════
-        const DAY_KO = ["월", "화", "수", "목", "금", "토", "일"];
-        let baseMonday = getMonday(new Date());
+        // 유틸 위치 이동됨 (상단으로)
 
-        function getMonday(d) {
-            const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;
-            const m = new Date(d); m.setDate(d.getDate() + diff); m.setHours(0, 0, 0, 0); return m;
-        }
-        function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
-        function fmt(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }
-        function weekRange(m) { return `${fmt(m)}(월)~${fmt(addDays(m, 6))}(일)`; }
 
 
         // ════════════════════════════════════════════
@@ -733,6 +738,13 @@
         //  전체 렌더링
         // ════════════════════════════════════════════
         function render() {
+            if (!groups || !Array.isArray(groups)) {
+                console.error("❌ 데이터가 배열 형식이 아닙니다.");
+                return;
+            }
+            const tbody = document.getElementById('reportTbody');
+            if (!tbody) return;
+
             const today = new Date(); today.setHours(0, 0, 0, 0);
             const w1 = Array.from({ length: 7 }, (_, i) => addDays(baseMonday, i));
             const w2Mon = addDays(baseMonday, 7);
